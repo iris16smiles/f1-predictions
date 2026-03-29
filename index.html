@@ -1112,29 +1112,6 @@ function calcPlayerPoints(playerId) {
   return { total, races };
 }
 
-// ── LEADERBOARD ──
-function renderLeaderboard() {
-  const el = document.getElementById('page-leaderboard');
-  if(!state.players.length) { el.innerHTML='<div class="empty"><div class="empty-icon">👥</div><h3>No players yet</h3></div>'; return; }
-  const ranked = state.players.map(p=>({...p,...calcPlayerPoints(p.id)})).sort((a,b)=>b.total-a.total);
-  const rc=['p1','p2','p3'];
-  el.innerHTML = `<div class="page-title">Leaderboard</div>
-  <div class="page-sub">Each correct prediction = 1 point · Max 3 per race</div>
-  <div class="lb-list">${ranked.map((p,i)=>`
-    <div class="lb-card ${rc[i]||''}">
-      <div class="lb-rank">${i+1}</div>
-      <div class="lb-avatar" style="background:${p.color}">${p.initials}</div>
-      <div class="lb-info">
-        <div class="lb-name">${p.name}</div>
-        <div class="lb-sub">${p.races} race${p.races!==1?'s':''} rated</div>
-      </div>
-      <div style="text-align:right">
-        <div class="lb-points">${p.total}</div>
-        <div class="lb-pts-label">points</div>
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
 
 // ── HISTORY ──
 function renderHistory() {
