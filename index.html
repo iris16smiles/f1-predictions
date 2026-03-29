@@ -137,23 +137,6 @@
     .lb-card.p1 { background: linear-gradient(135deg,#fffbe6,#fff8d0); }
     .lb-card.p2 { background: linear-gradient(135deg,#f4f4f4,#ececec); }
     .lb-card.p3 { background: linear-gradient(135deg,#fff4ec,#ffede0); }
-    .standings-strip { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin-bottom: 28px; }
-    .standings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .standings-title { font-size: 0.78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
-    .standings-rows { display: flex; flex-direction: column; gap: 8px; }
-    .standings-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; transition: background .15s; }
-    .standings-row:hover { background: var(--surface2); }
-    .standings-row.rank-1 { background: linear-gradient(90deg,rgba(255,214,0,.12),transparent); }
-    .standings-row.rank-2 { background: linear-gradient(90deg,rgba(180,180,180,.1),transparent); }
-    .standings-row.rank-3 { background: linear-gradient(90deg,rgba(210,140,80,.1),transparent); }
-    .standings-rank { font-size: 0.82rem; font-weight: 700; color: var(--text3); width: 20px; text-align: center; flex-shrink: 0; }
-    .standings-rank.gold { color: #c9920a; }
-    .standings-rank.silver { color: #888; }
-    .standings-rank.bronze { color: #a0622a; }
-    .standings-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .standings-name { font-size: 0.9rem; font-weight: 600; flex: 1; color: var(--text); }
-    .standings-pts { font-size: 0.9rem; font-weight: 700; color: var(--text); }
-    .standings-pts-label { font-size: 0.72rem; color: var(--text3); margin-left: 2px; }
 
     /* ── NEXT RACE HERO ── */
     .next-race-hero { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 12px; position: relative; }
@@ -507,16 +490,19 @@ function renderNextRace(upcoming) {
 }
 
 // ── SEASON SUMMARY ──
-function renderSeasonSummary() {
+// ── COMBINED LEADERBOARD ──
+function renderLeaderboard() {
   if (!state.players.length) return '';
+
   const ratedRaces = RACES.filter(r => {
     const rr = state.ratings[r.id];
     return rr && Object.keys(rr).length > 0;
   });
-  if (!ratedRaces.length) return '';
+  const hasHistory = ratedRaces.length > 0;
+  const recentRaces = ratedRaces.slice(-3);
+  const rankMedal = ['🥇','🥈','🥉'];
 
   const playerStats = state.players.map(p => {
-    // Points per race
     const raceScores = ratedRaces.map(race => {
       const rating = state.ratings[race.id]?.[p.id];
       if (!rating) return null;
@@ -524,25 +510,25 @@ function renderSeasonSummary() {
     }).filter(v => v !== null);
 
     const total = raceScores.reduce((a,b) => a+b, 0);
-    const totalRated = raceScores.length;
     const totalPreds = ratedRaces.reduce((acc, race) => {
       const pred = state.predictions[race.id]?.[p.id];
       return acc + [pred?.p1, pred?.p2, pred?.p3].filter(Boolean).length;
     }, 0);
-    const correct = total;
-    const accuracy = totalPreds > 0 ? Math.round((correct / totalPreds) * 100) : 0;
+    const accuracy = totalPreds > 0 ? Math.round((total / totalPreds) * 100) : 0;
 
-    // Form: last 3 races
-    const recentScores = raceScores.slice(-3);
-    // Pad to 3 with nulls if fewer races rated
+    // Form pips for last 3 rated races
+    const recentScores = recentRaces.map(race => {
+      const rating = state.ratings[race.id]?.[p.id];
+      if (!rating) return null;
+      return [rating.p1, rating.p2, rating.p3].filter(v => v === true).length;
+    });
     while (recentScores.length < 3) recentScores.unshift(null);
-    const formHtml = recentScores.map(s => {
-      if (s === null) return `<div class="form-pip fp-none" title="Not yet"></div>`;
-      return `<div class="form-pip fp-${s}" title="${s} pts"></div>`;
-    }).join('');
+    const formHtml = recentScores.map(s =>
+      s === null ? `<div class="form-pip fp-none"></div>`
+                 : `<div class="form-pip fp-${s}" title="${s} pts"></div>`
+    ).join('');
 
     // Trend badge
-    let trendBadge = '';
     const streak = (() => {
       let s = 0;
       for (let i = raceScores.length - 1; i >= 0; i--) {
@@ -550,76 +536,53 @@ function renderSeasonSummary() {
       }
       return s;
     })();
+    let trendBadge = '';
     if (streak >= 2) {
       trendBadge = `<span class="trend-badge tb-fire">🔥 ${streak}-race streak</span>`;
     } else if (accuracy >= 67 && totalPreds >= 3) {
-      trendBadge = `<span class="trend-badge tb-sharp">🎯 ${accuracy}% accuracy</span>`;
-    } else if (total === 0 && totalRated >= 2) {
+      trendBadge = `<span class="trend-badge tb-sharp">🎯 ${accuracy}% accurate</span>`;
+    } else if (total === 0 && raceScores.length >= 2) {
       trendBadge = `<span class="trend-badge tb-unlucky">😬 Waiting for a win</span>`;
-    } else if (totalRated > 0) {
-      const lastTwo = raceScores.slice(-2);
-      if (lastTwo.length === 2 && lastTwo[1] > lastTwo[0]) {
-        trendBadge = `<span class="trend-badge tb-sharp">📈 Improving</span>`;
-      }
+    } else if (raceScores.length >= 2 && raceScores[raceScores.length-1] > raceScores[raceScores.length-2]) {
+      trendBadge = `<span class="trend-badge tb-sharp">📈 Improving</span>`;
     }
 
-    // Sub-line
-    const subLine = totalRated > 0
-      ? `${correct}/${totalPreds} correct · ${accuracy}%`
-      : 'No rated races yet';
-
-    return { p, total, totalRated, totalPreds, correct, accuracy, formHtml, trendBadge, subLine };
+    return { p, total, totalPreds, accuracy, formHtml, trendBadge };
   }).sort((a,b) => b.total - a.total);
 
-  const rows = playerStats.map(({p, total, formHtml, trendBadge, subLine}) => `
-    <div class="player-stat-row">
+  const rows = playerStats.map(({p, total, totalPreds, accuracy, formHtml, trendBadge}, i) => {
+    const medal = rankMedal[i] || `<span style="font-size:.8rem;font-weight:700;color:var(--text3)">${i+1}</span>`;
+    const subLine = hasHistory ? `${total}/${totalPreds} correct · ${accuracy}%` : 'Season not started';
+    const formRow = hasHistory
+      ? `<div class="stat-form" style="margin-top:5px">${formHtml}<span style="font-size:.68rem;color:var(--text3);margin-left:5px">${recentRaces.map(r=>r.round).join(' · ')}</span></div>`
+      : '';
+    return `<div class="player-stat-row">
+      <div style="font-size:1.2rem;width:26px;text-align:center;flex-shrink:0">${medal}</div>
       <div class="stat-avatar" style="background:${p.color}">${p.initials}</div>
       <div class="stat-info">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="stat-name">${p.name}</span>
-          ${trendBadge}
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span class="stat-name">${p.name}</span>${trendBadge}
         </div>
         <div class="stat-trend">${subLine}</div>
-        <div class="stat-form">${formHtml}<span style="font-size:.68rem;color:var(--text3);margin-left:4px">last ${ratedRaces.slice(-3).map(r=>r.round).join(' · ')}</span></div>
+        ${formRow}
       </div>
       <div class="stat-right">
         <div class="stat-pts">${total}</div>
         <div class="stat-accuracy">pts</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+
+  const subtitle = hasHistory
+    ? `${ratedRaces.length} race${ratedRaces.length !== 1 ? 's' : ''} rated`
+    : '1 pt per correct prediction';
 
   return `<div class="season-summary">
     <div class="season-summary-header">
-      <span class="season-summary-title">📊 Season so far</span>
-      <span class="season-summary-sub">${ratedRaces.length} race${ratedRaces.length!==1?'s':''} rated</span>
+      <span class="season-summary-title">🏆 Standings</span>
+      <span class="season-summary-sub">${subtitle}</span>
     </div>
-    <div class="season-summary-rows">${rows}</div>
-  </div>`;
-}
-
-// ── STANDINGS STRIP ──
-function renderStandings() {
-  if (!state.players.length) return '';
-  const ranked = state.players.map(p => ({...p, ...calcPlayerPoints(p.id)})).sort((a,b) => b.total - a.total);
-  const rankClass = ['rank-1','rank-2','rank-3'];
-  const rankIcon = ['🥇','🥈','🥉'];
-  const rankColor = ['gold','silver','bronze'];
-  const rows = ranked.map((p, i) => `
-    <div class="standings-row ${rankClass[i]||''}">
-      <div class="standings-rank ${rankColor[i]||''}">${rankIcon[i] || i+1}</div>
-      <div class="standings-avatar" style="background:${p.color}">${p.initials}</div>
-      <div class="standings-name">${p.name}</div>
-      <div>
-        <span class="standings-pts">${p.total}</span>
-        <span class="standings-pts-label">pt${p.total!==1?'s':''}</span>
-      </div>
-    </div>`).join('');
-  return `<div class="standings-strip">
-    <div class="standings-header">
-      <span class="standings-title">🏆 Standings</span>
-      <span style="font-size:.75rem;color:var(--text3)">1 pt per correct prediction</span>
-    </div>
-    <div class="standings-rows">${rows}</div>
+    <div>${rows}</div>
   </div>`;
 }
 
@@ -706,8 +669,7 @@ function renderCalendar() {
 
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
   html += renderNextRace(upcoming);
-  html += renderSeasonSummary();
-  html += renderStandings();
+  html += renderLeaderboard();
   if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
