@@ -670,7 +670,7 @@ function renderCalendar() {
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
   html += renderLeaderboard();
   html += renderNextRace(upcoming);
-  if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
+  if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${[...past].reverse().map(raceCard).join('')}</div>`;
   if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
 }
