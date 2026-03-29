@@ -138,6 +138,20 @@
     .lb-card.p2 { background: linear-gradient(135deg,#f4f4f4,#ececec); }
     .lb-card.p3 { background: linear-gradient(135deg,#fff4ec,#ffede0); }
 
+    /* ── LEADERBOARD CARDS ── */
+    .lb-card-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 18px 16px; margin-bottom: 12px; }
+    .lb-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .lb-cards-row { display: flex; gap: 10px; }
+    .lb-player-card { flex: 1; border-radius: 12px; padding: 14px 12px 12px; text-align: center; }
+    .lb-card-medal { font-size: 1.3rem; margin-bottom: 6px; line-height: 1; }
+    .lb-card-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #fff; margin: 0 auto 7px; }
+    .lb-card-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 7px; color: var(--text); }
+    .lb-card-pts { font-size: 1.8rem; font-weight: 800; line-height: 1; color: var(--text); }
+    .lb-card-ptslabel { font-size: 0.68rem; color: var(--text3); margin-top: 2px; margin-bottom: 3px; }
+    .lb-card-acc { font-size: 0.7rem; color: var(--text3); margin-bottom: 8px; }
+    .lb-form { display: flex; gap: 3px; justify-content: center; }
+    .lb-pip { height: 4px; width: 18px; border-radius: 2px; }
+
     /* ── NEXT RACE HERO ── */
     .next-race-hero { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 12px; position: relative; }
     .next-race-hero-inner { padding: 22px 24px 20px; }
@@ -516,7 +530,6 @@ function renderLeaderboard() {
     }, 0);
     const accuracy = totalPreds > 0 ? Math.round((total / totalPreds) * 100) : 0;
 
-    // Form pips for last 3 rated races
     const recentScores = recentRaces.map(race => {
       const rating = state.ratings[race.id]?.[p.id];
       if (!rating) return null;
@@ -524,52 +537,28 @@ function renderLeaderboard() {
     });
     while (recentScores.length < 3) recentScores.unshift(null);
     const formHtml = recentScores.map(s =>
-      s === null ? `<div class="form-pip fp-none"></div>`
-                 : `<div class="form-pip fp-${s}" title="${s} pts"></div>`
+      s === null ? `<div class="lb-pip fp-none"></div>`
+                 : `<div class="lb-pip fp-${s}"></div>`
     ).join('');
 
-    // Trend badge
-    const streak = (() => {
-      let s = 0;
-      for (let i = raceScores.length - 1; i >= 0; i--) {
-        if (raceScores[i] > 0) s++; else break;
-      }
-      return s;
-    })();
-    let trendBadge = '';
-    if (streak >= 2) {
-      trendBadge = `<span class="trend-badge tb-fire">🔥 ${streak}-race streak</span>`;
-    } else if (accuracy >= 67 && totalPreds >= 3) {
-      trendBadge = `<span class="trend-badge tb-sharp">🎯 ${accuracy}% accurate</span>`;
-    } else if (total === 0 && raceScores.length >= 2) {
-      trendBadge = `<span class="trend-badge tb-unlucky">😬 Waiting for a win</span>`;
-    } else if (raceScores.length >= 2 && raceScores[raceScores.length-1] > raceScores[raceScores.length-2]) {
-      trendBadge = `<span class="trend-badge tb-sharp">📈 Improving</span>`;
-    }
-
-    return { p, total, totalPreds, accuracy, formHtml, trendBadge };
+    return { p, total, totalPreds, accuracy, formHtml };
   }).sort((a,b) => b.total - a.total);
 
-  const rows = playerStats.map(({p, total, totalPreds, accuracy, formHtml, trendBadge}, i) => {
-    const medal = rankMedal[i] || `<span style="font-size:.8rem;font-weight:700;color:var(--text3)">${i+1}</span>`;
-    const subLine = hasHistory ? `${total}/${totalPreds} correct · ${accuracy}%` : 'Season not started';
+  const cards = playerStats.map(({p, total, totalPreds, accuracy, formHtml}, i) => {
+    const medal = rankMedal[i] || (i+1);
+    const bgStyle = i === 0 ? 'background:linear-gradient(135deg,#fffbe6,#fff3cc)' : 'background:var(--surface2)';
+    const accLine = hasHistory ? `${accuracy}% accurate` : '–';
     const formRow = hasHistory
-      ? `<div class="stat-form" style="margin-top:5px">${formHtml}<span style="font-size:.68rem;color:var(--text3);margin-left:5px">${recentRaces.map(r=>r.round).join(' · ')}</span></div>`
+      ? `<div class="lb-form">${formHtml}</div>`
       : '';
-    return `<div class="player-stat-row">
-      <div style="font-size:1.2rem;width:26px;text-align:center;flex-shrink:0">${medal}</div>
-      <div class="stat-avatar" style="background:${p.color}">${p.initials}</div>
-      <div class="stat-info">
-        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-          <span class="stat-name">${p.name}</span>${trendBadge}
-        </div>
-        <div class="stat-trend">${subLine}</div>
-        ${formRow}
-      </div>
-      <div class="stat-right">
-        <div class="stat-pts">${total}</div>
-        <div class="stat-accuracy">pts</div>
-      </div>
+    return `<div class="lb-player-card" style="${bgStyle}">
+      <div class="lb-card-medal">${medal}</div>
+      <div class="lb-card-avatar" style="background:${p.color}">${p.initials}</div>
+      <div class="lb-card-name">${p.name}</div>
+      <div class="lb-card-pts">${total}</div>
+      <div class="lb-card-ptslabel">points</div>
+      <div class="lb-card-acc">${accLine}</div>
+      ${formRow}
     </div>`;
   }).join('');
 
@@ -577,12 +566,12 @@ function renderLeaderboard() {
     ? `${ratedRaces.length} race${ratedRaces.length !== 1 ? 's' : ''} rated`
     : '1 pt per correct prediction';
 
-  return `<div class="season-summary">
-    <div class="season-summary-header">
+  return `<div class="lb-card-wrap">
+    <div class="lb-card-header">
       <span class="season-summary-title">🏆 Standings</span>
       <span class="season-summary-sub">${subtitle}</span>
     </div>
-    <div>${rows}</div>
+    <div class="lb-cards-row">${cards}</div>
   </div>`;
 }
 
