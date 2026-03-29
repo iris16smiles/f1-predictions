@@ -8,134 +8,339 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --red: #e10600; --dark: #15151e; --darker: #0d0d14; --card: #1e1e2e;
-      --card2: #252538; --border: #2e2e45; --text: #f0f0f0; --muted: #8888aa;
-      --green: #00d46a; --gold: #ffd700; --silver: #c0c0c0; --bronze: #cd7f32;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --surface2: #f5f5f7;
+      --red: #e10600;
+      --text: #1d1d1f;
+      --text2: #6e6e73;
+      --text3: #aeaeb2;
+      --border: rgba(0,0,0,0.08);
+      --shadow: 0 2px 20px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
+      --green: #30d158;
+      --blue: #0071e3;
+      --gold: #f5a623;
+      --radius: 18px;
+      --radius-sm: 10px;
     }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--darker); color: var(--text); min-height: 100vh; }
-    header { background: var(--dark); border-bottom: 3px solid var(--red); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
-    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; }
-    .logo span { color: var(--red); }
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background .3s; margin-left: 8px; }
-    .sync-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    nav { display: flex; gap: 4px; }
-    nav button { background: none; border: none; color: var(--muted); cursor: pointer; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; transition: all .2s; }
-    nav button:hover, nav button.active { background: var(--card); color: var(--text); }
-    nav button.active { border-bottom: 2px solid var(--red); border-radius: 6px 6px 0 0; }
-    main { max-width: 900px; margin: 0 auto; padding: 28px 16px; }
-    .page { display: none; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+    }
+    .logo {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.3px;
+      display: flex; align-items: center; gap: 8px; color: var(--text);
+    }
+    .logo-icon { font-size: 1.2rem; }
+    nav { display: flex; gap: 2px; }
+    nav button {
+      background: none; border: none; color: var(--text2);
+      cursor: pointer; padding: 6px 14px; border-radius: 20px;
+      font-size: 0.85rem; font-weight: 500;
+      font-family: inherit; transition: all .2s;
+    }
+    nav button:hover { background: var(--surface2); color: var(--text); }
+    nav button.active { background: var(--text); color: #fff; }
+    .sync-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text3); transition: background .4s;
+    }
+    .sync-dot.live { background: var(--green); box-shadow: 0 0 0 3px rgba(48,209,88,.2); }
+
+    /* ── LAYOUT ── */
+    main { max-width: 780px; margin: 0 auto; padding: 40px 20px 80px; }
+    .page { display: none; animation: fadeUp .3s ease; }
     .page.active { display: block; }
-    .setup-card { background: var(--card); border-radius: 12px; padding: 32px; max-width: 460px; margin: 60px auto; border: 1px solid var(--border); text-align: center; }
-    .setup-card h2 { font-size: 1.5rem; margin-bottom: 8px; }
-    .setup-card p { color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
-    .player-grid { display: grid; gap: 12px; margin-bottom: 20px; }
-    .player-input-row { display: flex; gap: 10px; align-items: center; }
-    input[type="text"] { background: var(--darker); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 14px; font-size: 0.95rem; outline: none; width: 100%; }
-    input[type="text"]:focus { border-color: var(--red); }
-    input[type="color"] { width: 36px; height: 36px; padding: 2px; cursor: pointer; border-radius: 8px; border: 2px solid var(--border); background: var(--darker); }
-    .btn { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: opacity .2s; width: 100%; }
-    .btn:hover { opacity: 0.88; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-sm { padding: 7px 14px; font-size: 0.82rem; width: auto; }
-    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); }
-    .btn-ghost:hover { background: var(--card2); }
-    .btn-green { background: var(--green); color: #000; }
-    .btn-blue { background: #3b82f6; color: #fff; }
-    .add-player-btn { background: none; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; padding: 10px; font-size: 0.9rem; width: 100%; transition: all .2s; }
-    .add-player-btn:hover { border-color: var(--red); color: var(--text); }
-    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .section-title .badge { background: var(--red); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
-    .race-grid { display: grid; gap: 10px; }
-    .race-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 16px 20px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .race-card:hover { border-color: var(--red); transform: translateY(-1px); }
-    .race-card.predicted { border-color: var(--green); }
-    .race-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
-    .round-badge { background: var(--darker); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    .race-info h3 { font-size: 1rem; font-weight: 700; }
-    .race-info p { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
-    .race-flag { font-size: 1.6rem; flex-shrink: 0; }
-    .race-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-    .race-status { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
-    .race-status.open { background: rgba(225,6,0,.15); color: var(--red); }
-    .race-status.done { background: rgba(0,212,106,.15); color: var(--green); }
-    .fetch-badge { font-size: 0.7rem; background: rgba(59,130,246,.15); color: #60a5fa; padding: 3px 8px; border-radius: 10px; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── PAGE TITLE ── */
+    .page-title { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .page-sub { color: var(--text2); font-size: 0.95rem; margin-bottom: 28px; }
+
+    /* ── RACE CARDS ── */
+    .race-list { display: flex; flex-direction: column; gap: 12px; }
+    .race-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: box-shadow .25s, transform .25s;
+      cursor: pointer;
+    }
+    .race-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .race-card.scored { cursor: default; }
+    .race-card.scored:hover { box-shadow: var(--shadow); transform: none; }
+
+    .race-main {
+      padding: 18px 22px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .race-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+    .race-flag { font-size: 2rem; flex-shrink: 0; }
+    .race-meta { flex: 1; min-width: 0; }
+    .race-name { font-size: 1rem; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .race-date { font-size: 0.8rem; color: var(--text2); margin-top: 2px; }
+    .race-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .tag {
+      font-size: 0.7rem; font-weight: 600; padding: 2px 8px;
+      border-radius: 20px; letter-spacing: 0.2px;
+    }
+    .tag-round { background: var(--surface2); color: var(--text2); }
+    .tag-sprint { background: rgba(245,166,35,.12); color: #b87a00; }
+    .tag-scored { background: rgba(48,209,88,.12); color: #1a8a3e; }
+    .tag-upcoming { background: rgba(225,6,0,.1); color: var(--red); }
+
+    .race-action { flex-shrink: 0; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; border-radius: 980px; font-family: inherit;
+      font-weight: 600; cursor: pointer; transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--blue); color: #fff; padding: 8px 18px; font-size: 0.85rem; }
+    .btn-primary:hover { background: #0077ed; }
+    .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+    .btn-ghost { background: var(--surface2); color: var(--text); padding: 8px 16px; font-size: 0.85rem; }
+    .btn-ghost:hover { background: #e8e8ed; }
+    .btn-green { background: var(--green); color: #fff; padding: 8px 18px; font-size: 0.85rem; }
+    .btn-green:hover { background: #28c150; }
+    .btn-red { background: var(--red); color: #fff; padding: 8px 18px; font-size: 0.85rem; }
+    .btn-red:hover { opacity: .88; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── PREDICTIONS STRIP (on race card) ── */
+    .predictions-strip {
+      border-top: 1px solid var(--border);
+      padding: 14px 22px;
+      display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .pred-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border-radius: var(--radius-sm);
+      padding: 7px 12px; flex: 1; min-width: 140px;
+    }
+    .pred-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+    .pred-info { min-width: 0; }
+    .pred-player { font-size: 0.72rem; color: var(--text2); font-weight: 500; }
+    .pred-pick { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pred-pick.empty { color: var(--text3); font-style: italic; font-weight: 400; }
+
+    /* ── SECTION DIVIDER ── */
+    .section-header {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text2);
+      margin: 32px 0 12px;
+    }
+    .section-header:first-child { margin-top: 0; }
+
+    /* ── LEADERBOARD ── */
+    .lb-list { display: flex; flex-direction: column; gap: 10px; }
+    .lb-card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 18px 22px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .lb-card.p1 { background: linear-gradient(135deg,#fffbe6,#fff8d0); }
+    .lb-card.p2 { background: linear-gradient(135deg,#f4f4f4,#ececec); }
+    .lb-card.p3 { background: linear-gradient(135deg,#fff4ec,#ffede0); }
+    .lb-rank { font-size: 1.3rem; font-weight: 800; width: 28px; text-align: center; color: var(--text3); }
+    .p1 .lb-rank { color: #b8860b; }
+    .p2 .lb-rank { color: #888; }
+    .p3 .lb-rank { color: #a0522d; }
+    .lb-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .lb-info { flex: 1; }
+    .lb-name { font-size: 1rem; font-weight: 600; }
+    .lb-sub { font-size: 0.78rem; color: var(--text2); margin-top: 2px; }
+    .lb-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .lb-pill { font-size: 0.7rem; background: rgba(0,0,0,.06); border-radius: 20px; padding: 2px 8px; color: var(--text2); }
+    .lb-points { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; color: var(--text); }
+    .lb-pts-label { font-size: 0.72rem; color: var(--text2); font-weight: 500; }
+
+    /* ── POINTS CARD ── */
+    .points-card {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 22px 24px; margin-bottom: 28px;
+    }
+    .points-card h3 { font-size: 0.85rem; font-weight: 600; color: var(--text2); margin-bottom: 14px; }
+    .points-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .points-item {
+      background: var(--surface2); border-radius: var(--radius-sm);
+      padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .points-label { font-size: 0.8rem; color: var(--text2); }
+    .points-val { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+
+    /* ── HISTORY ── */
+    .history-card {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+      margin-bottom: 10px; overflow: hidden;
+    }
+    .history-header {
+      padding: 16px 22px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; transition: background .2s;
+    }
+    .history-header:hover { background: var(--surface2); }
+    .history-header-left { display: flex; align-items: center; gap: 14px; }
+    .history-body { display: none; padding: 0 22px 18px; }
+    .history-body.open { display: block; }
+    .history-actual { font-size: 0.78rem; color: var(--text2); margin-bottom: 12px; line-height: 1.6; }
+    .pred-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .pred-table th { text-align: left; color: var(--text2); padding: 6px 8px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
+    .pred-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .pred-table tr:last-child td { border-bottom: none; }
+    .correct { color: var(--green); font-weight: 600; }
+    .wrong { color: var(--text3); }
+    .pts-chip { background: rgba(225,6,0,.08); color: var(--red); font-weight: 700; padding: 2px 8px; border-radius: 20px; font-size: 0.78rem; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
+      z-index: 200; align-items: flex-end; justify-content: center; padding: 0;
+    }
+    @media (min-width: 600px) { .modal-overlay { align-items: center; padding: 20px; } }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--card); border-radius: 14px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
-    .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; position: sticky; top: 0; background: var(--card); z-index: 1; }
-    .modal-header h2 { font-size: 1.1rem; }
-    .modal-header p { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
-    .close-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 2px 6px; border-radius: 6px; transition: all .2s; }
-    .close-btn:hover { background: var(--card2); color: var(--text); }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 560px; max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp .28s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    @media (min-width: 600px) { .modal { border-radius: var(--radius); animation: popIn .22s cubic-bezier(0.34,1.2,0.64,1); } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes popIn { from { transform: scale(.94); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+    @media (min-width: 600px) { .modal-handle { display: none; } }
+    .modal-header { padding: 20px 24px 14px; }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+    .modal-header p { font-size: 0.82rem; color: var(--text2); margin-top: 3px; }
+    .modal-divider { height: 1px; background: var(--border); margin: 0 24px; }
     .modal-body { padding: 20px 24px; }
-    .predict-section { margin-bottom: 20px; }
-    .predict-section label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-    .predict-section .points-tag { color: var(--gold); font-size: 0.75rem; margin-left: 6px; }
-    .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .driver-btn { background: var(--darker); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); cursor: pointer; padding: 10px 12px; font-size: 0.85rem; text-align: left; transition: all .2s; font-weight: 500; }
-    .driver-btn:hover { border-color: var(--red); }
-    .driver-btn.selected { border-color: var(--red); background: rgba(225,6,0,.12); color: #fff; font-weight: 700; }
-    .driver-btn .team-tag { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .modal-footer { padding: 16px 24px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+    @media (max-width: 599px) { .modal-footer { flex-direction: column-reverse; } .modal-footer .btn { width: 100%; justify-content: center; padding: 14px; border-radius: var(--radius-sm); } }
+
+    /* ── FORM ELEMENTS ── */
+    .field-label { font-size: 0.8rem; font-weight: 600; color: var(--text2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .pts-badge-sm { font-size: 0.68rem; background: rgba(245,166,35,.15); color: #a07000; padding: 1px 7px; border-radius: 20px; font-weight: 600; }
+    .form-section { margin-bottom: 22px; }
+    .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .driver-btn {
+      background: var(--surface2); border: 1.5px solid transparent;
+      border-radius: var(--radius-sm); color: var(--text);
+      cursor: pointer; padding: 10px 12px; font-size: 0.82rem;
+      text-align: left; transition: all .15s; font-family: inherit;
+      font-weight: 500;
+    }
+    .driver-btn:hover { border-color: var(--blue); background: rgba(0,113,227,.05); }
+    .driver-btn.selected { border-color: var(--blue); background: rgba(0,113,227,.08); color: var(--blue); font-weight: 700; }
+    .driver-team { display: block; font-size: 0.68rem; color: var(--text2); margin-top: 1px; font-weight: 400; }
+    .driver-btn.selected .driver-team { color: rgba(0,113,227,.7); }
     .podium-row { display: flex; gap: 8px; }
     .podium-slot { flex: 1; }
-    .podium-slot label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 5px; }
-    select { background: var(--darker); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 9px 10px; font-size: 0.85rem; outline: none; width: 100%; cursor: pointer; }
-    select:focus { border-color: var(--red); }
-    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
-    .player-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-    .player-tab { padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all .2s; color: var(--muted); background: none; }
-    .player-tab.active { color: #fff; }
-    .leaderboard { display: grid; gap: 10px; }
-    .lb-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
-    .lb-card.rank-1 { border-color: var(--gold); }
-    .lb-card.rank-2 { border-color: var(--silver); }
-    .lb-card.rank-3 { border-color: var(--bronze); }
-    .rank-num { font-size: 1.4rem; font-weight: 900; width: 28px; text-align: center; }
-    .rank-1 .rank-num { color: var(--gold); }
-    .rank-2 .rank-num { color: var(--silver); }
-    .rank-3 .rank-num { color: var(--bronze); }
-    .lb-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; color: #fff; flex-shrink: 0; }
-    .lb-info { flex: 1; }
-    .lb-info h3 { font-size: 1rem; font-weight: 700; }
-    .lb-info p { font-size: 0.8rem; color: var(--muted); }
-    .lb-points { font-size: 1.5rem; font-weight: 900; color: var(--red); }
-    .lb-points span { font-size: 0.75rem; color: var(--muted); font-weight: 400; }
-    .points-breakdown { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-    .point-pill { background: var(--darker); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: var(--muted); }
-    .point-pill b { color: var(--text); }
-    .history-race { background: var(--card); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; }
-    .history-race-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background .2s; }
-    .history-race-header:hover { background: var(--card2); }
-    .history-race-body { padding: 0 18px 16px; display: none; }
-    .history-race-body.open { display: block; }
-    .pred-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
-    .pred-table th { text-align: left; color: var(--muted); padding: 6px 8px; font-weight: 600; font-size: 0.75rem; border-bottom: 1px solid var(--border); }
-    .pred-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .pred-table tr:last-child td { border-bottom: none; }
-    .correct { color: var(--green); }
-    .wrong { color: var(--red); opacity: 0.7; }
-    .pts-badge { background: rgba(225,6,0,.15); color: var(--red); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
-    .points-guide { background: var(--card); border-radius: 10px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
-    .points-guide h3 { margin-bottom: 12px; font-size: 0.95rem; }
-    .points-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .points-item { display: flex; justify-content: space-between; align-items: center; background: var(--darker); border-radius: 6px; padding: 8px 12px; font-size: 0.82rem; }
-    .points-item .pts { color: var(--gold); font-weight: 700; }
-    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
-    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
-    .empty-state h3 { color: var(--text); margin-bottom: 8px; }
-    .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 1.1rem; }
-    .fetched-banner { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.82rem; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
-    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: #000; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
-    #toast.show { opacity: 1; }
-    #toast.error { background: var(--red); color: #fff; }
-    @media (max-width: 600px) { .driver-grid { grid-template-columns: 1fr 1fr; } .podium-row { flex-direction: column; } nav button { padding: 8px 9px; font-size: 0.76rem; } .race-card { flex-wrap: wrap; } }
+    .podium-slot .field-label { font-size: 0.75rem; }
+    select {
+      background: var(--surface2); border: 1px solid transparent;
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: 10px 12px; font-size: 0.85rem; font-family: inherit;
+      outline: none; width: 100%; cursor: pointer; transition: border-color .15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e6e73' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      padding-right: 32px;
+    }
+    select:focus { border-color: var(--blue); background-color: #fff; }
+    input[type="text"] { background: var(--surface2); border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--text); padding: 10px 14px; font-size: 0.95rem; font-family: inherit; outline: none; width: 100%; transition: border-color .15s; }
+    input[type="text"]:focus { border-color: var(--blue); background: #fff; }
+    input[type="color"] { width: 34px; height: 34px; padding: 2px; cursor: pointer; border-radius: 50%; border: 2px solid var(--border); background: none; flex-shrink: 0; }
+
+    .player-tabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 20px; }
+    .player-tab {
+      padding: 7px 16px; border-radius: 980px; border: 1.5px solid var(--border);
+      cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all .2s;
+      color: var(--text2); background: var(--surface2); font-family: inherit;
+    }
+    .player-tab.active { border-color: transparent; color: #fff; }
+
+    .fetch-banner {
+      display: none; background: rgba(0,113,227,.07); border: 1px solid rgba(0,113,227,.2);
+      border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 18px;
+      font-size: 0.82rem; color: var(--blue); align-items: center; gap: 8px;
+    }
+
+    /* ── SETUP ── */
+    .setup-card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); padding: 40px 36px;
+      max-width: 440px; margin: 60px auto; text-align: center;
+    }
+    .setup-icon { font-size: 3rem; margin-bottom: 16px; }
+    .setup-card h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .setup-card p { color: var(--text2); margin-bottom: 28px; font-size: 0.9rem; line-height: 1.5; }
+    .player-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .add-btn {
+      background: none; border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
+      color: var(--text2); cursor: pointer; padding: 11px; font-size: 0.88rem;
+      font-family: inherit; width: 100%; transition: all .2s; margin-bottom: 20px;
+    }
+    .add-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(0,113,227,.04); }
+
+    /* ── EMPTY / LOADING ── */
+    .empty { text-align: center; padding: 60px 24px; color: var(--text2); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty h3 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .loading { text-align: center; padding: 80px; color: var(--text2); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(29,29,31,.9); backdrop-filter: blur(10px);
+      color: #fff; padding: 11px 20px; border-radius: 980px;
+      font-weight: 500; font-size: 0.88rem; z-index: 999;
+      opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: rgba(225,6,0,.9); }
+
+    @media (max-width: 600px) {
+      main { padding: 24px 16px 80px; }
+      .page-title { font-size: 1.6rem; }
+      .driver-grid { grid-template-columns: 1fr 1fr; }
+      .podium-row { flex-direction: column; }
+      .points-grid { grid-template-columns: 1fr 1fr; }
+      nav button { padding: 6px 10px; font-size: 0.8rem; }
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">🏎️ F1 <span>Predictions</span> League <div class="sync-dot" id="sync-dot"></div></div>
+  <div class="logo"><span class="logo-icon">🏎️</span> F1 Predictions League <div class="sync-dot" id="sync-dot"></div></div>
   <nav>
     <button class="active" onclick="showPage('calendar',this)">Calendar</button>
     <button onclick="showPage('leaderboard',this)">Leaderboard</button>
@@ -145,36 +350,53 @@
 </header>
 
 <main>
-  <div id="page-calendar" class="page active"><div class="loading">Connecting</div></div>
-  <div id="page-leaderboard" class="page"><div class="loading">Loading</div></div>
-  <div id="page-history" class="page"><div class="loading">Loading</div></div>
+  <div id="page-calendar" class="page active"><div class="loading">Connecting…</div></div>
+  <div id="page-leaderboard" class="page"><div class="loading">Loading…</div></div>
+  <div id="page-history" class="page"><div class="loading">Loading…</div></div>
   <div id="page-settings" class="page"></div>
 </main>
 
 <!-- PREDICT MODAL -->
 <div class="modal-overlay" id="predict-modal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
-      <div><h2 id="modal-title"></h2><p id="modal-subtitle"></p></div>
-      <button class="close-btn" onclick="closeModal()">✕</button>
+      <h2 id="modal-title"></h2>
+      <p id="modal-subtitle"></p>
     </div>
+    <div class="modal-divider"></div>
     <div class="modal-body">
-      <div class="predict-section"><label>Predicting as</label><div class="player-tabs" id="player-tabs"></div></div>
-      <div class="predict-section"><label>🥇 Race Winner <span class="points-tag">+25 pts</span></label><div class="driver-grid" id="winner-grid"></div></div>
-      <div class="predict-section">
-        <label>🏆 Full Podium <span class="points-tag">+18 / +15 pts</span></label>
+      <div class="form-section">
+        <div class="field-label">Predicting as</div>
+        <div class="player-tabs" id="player-tabs"></div>
+      </div>
+      <div class="form-section">
+        <div class="field-label">🥇 Race Winner <span class="pts-badge-sm">+25 pts</span></div>
+        <div class="driver-grid" id="winner-grid"></div>
+      </div>
+      <div class="form-section">
+        <div class="field-label">🏆 Podium <span class="pts-badge-sm">+18 / +15 pts</span></div>
         <div class="podium-row">
-          <div class="podium-slot"><label>2nd Place</label><select id="pred-p2"></select></div>
-          <div class="podium-slot"><label>3rd Place</label><select id="pred-p3"></select></div>
+          <div class="podium-slot"><div class="field-label">2nd Place</div><select id="pred-p2"></select></div>
+          <div class="podium-slot"><div class="field-label">3rd Place</div><select id="pred-p3"></select></div>
         </div>
       </div>
-      <div class="predict-section"><label>🏎️ Pole Position <span class="points-tag">+8 pts</span></label><div class="driver-grid" id="pole-grid"></div></div>
-      <div class="predict-section"><label>⚡ Fastest Lap <span class="points-tag">+10 pts</span></label><select id="pred-fl"></select></div>
-      <div class="predict-section"><label>💥 Predict a DNF <span class="points-tag">+5 pts</span></label><select id="pred-dnf"></select></div>
+      <div class="form-section">
+        <div class="field-label">🏎️ Pole Position <span class="pts-badge-sm">+8 pts</span></div>
+        <div class="driver-grid" id="pole-grid"></div>
+      </div>
+      <div class="form-section">
+        <div class="field-label">⚡ Fastest Lap <span class="pts-badge-sm">+10 pts</span></div>
+        <select id="pred-fl"></select>
+      </div>
+      <div class="form-section" style="margin-bottom:0">
+        <div class="field-label">💥 Predict a DNF <span class="pts-badge-sm">+5 pts</span></div>
+        <select id="pred-dnf"></select>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-sm" id="save-pred-btn" onclick="savePrediction()">Save Prediction ✓</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-red" id="save-pred-btn" onclick="savePrediction()">Save Prediction</button>
     </div>
   </div>
 </div>
@@ -182,43 +404,43 @@
 <!-- RESULTS MODAL -->
 <div class="modal-overlay" id="results-modal">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
-      <div><h2 id="results-modal-title"></h2><p id="results-modal-subtitle">Review and confirm the results below</p></div>
-      <button class="close-btn" onclick="closeResultsModal()">✕</button>
+      <h2 id="results-modal-title"></h2>
+      <p id="results-modal-subtitle">Review and confirm results</p>
     </div>
+    <div class="modal-divider"></div>
     <div class="modal-body">
-      <div id="fetch-banner" class="fetched-banner" style="display:none">
-        ✅ Auto-fetched from Formula 1 official data — please review before saving
-      </div>
+      <div class="fetch-banner" id="fetch-banner">✅ Auto-fetched from F1 official data — please review before saving</div>
       <div style="display:grid;gap:14px;">
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">🥇 Race Winner</label><select id="res-p1"></select></div>
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">🥈 2nd Place</label><select id="res-p2"></select></div>
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">🥉 3rd Place</label><select id="res-p3"></select></div>
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">🏎️ Pole Position</label><select id="res-pole"></select></div>
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">⚡ Fastest Lap</label><select id="res-fl"></select></div>
-        <div><label style="display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600">💥 First DNF</label><select id="res-dnf"></select></div>
+        <div><div class="field-label">🥇 Race Winner</div><select id="res-p1"></select></div>
+        <div><div class="field-label">🥈 2nd Place</div><select id="res-p2"></select></div>
+        <div><div class="field-label">🥉 3rd Place</div><select id="res-p3"></select></div>
+        <div><div class="field-label">🏎️ Pole Position</div><select id="res-pole"></select></div>
+        <div><div class="field-label">⚡ Fastest Lap</div><select id="res-fl"></select></div>
+        <div><div class="field-label">💥 First DNF</div><select id="res-dnf"></select></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeResultsModal()">Cancel</button>
-      <button class="btn btn-blue btn-sm" id="refetch-btn" onclick="refetchResults()" style="display:none">↻ Re-fetch</button>
-      <button class="btn btn-green btn-sm" onclick="saveResults()">Score & Lock Results ✓</button>
+      <button class="btn btn-ghost" onclick="closeResultsModal()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" id="refetch-btn" onclick="refetchResults()" style="display:none">↻ Re-fetch</button>
+      <button class="btn btn-green" onclick="saveResults()">Score & Lock ✓</button>
     </div>
   </div>
 </div>
 
 <!-- SETUP OVERLAY -->
 <div class="modal-overlay" id="setup-overlay">
-  <div class="setup-card" style="margin:0;">
-    <div style="font-size:2.5rem;margin-bottom:12px;">🏎️</div>
-    <h2>Welcome to F1 Predictions!</h2>
-    <p>Add everyone in your group. All players will appear for anyone who opens the link.</p>
-    <div class="player-grid" id="setup-player-grid">
-      <div class="player-input-row"><input type="color" value="#e10600" id="setup-color-0"><input type="text" placeholder="Player 1 name" id="setup-name-0"></div>
-      <div class="player-input-row"><input type="color" value="#00d46a" id="setup-color-1"><input type="text" placeholder="Player 2 name" id="setup-name-1"></div>
+  <div class="setup-card">
+    <div class="setup-icon">🏎️</div>
+    <h2>Welcome to F1 Predictions</h2>
+    <p>Add everyone in your group. All players will be shared with anyone who opens the link.</p>
+    <div id="setup-player-grid">
+      <div class="player-row"><input type="color" value="#e10600" id="setup-color-0"><input type="text" placeholder="Player 1 name" id="setup-name-0"></div>
+      <div class="player-row"><input type="color" value="#30d158" id="setup-color-1"><input type="text" placeholder="Player 2 name" id="setup-name-1"></div>
     </div>
-    <button class="add-player-btn" onclick="addSetupPlayer()" style="margin-bottom:16px;">+ Add another player</button>
-    <button class="btn" id="setup-btn" onclick="setupDone()">Start Predicting! 🏁</button>
+    <button class="add-btn" onclick="addSetupPlayer()">+ Add another player</button>
+    <button class="btn btn-red" style="width:100%;justify-content:center;padding:14px;border-radius:12px;font-size:.95rem;" id="setup-btn" onclick="setupDone()">Start Predicting 🏁</button>
   </div>
 </div>
 
@@ -238,7 +460,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const DOC = db.collection('league').doc('main');
 
-// ── STATIC DATA ──
+// ── DATA ──
 const DRIVERS = [
   {name:"Max Verstappen",team:"Red Bull"},{name:"Liam Lawson",team:"Red Bull"},
   {name:"Lewis Hamilton",team:"Ferrari"},{name:"Charles Leclerc",team:"Ferrari"},
@@ -251,7 +473,6 @@ const DRIVERS = [
   {name:"Pierre Gasly",team:"Alpine"},{name:"Jack Doohan",team:"Alpine"},
   {name:"Esteban Ocon",team:"Haas"},{name:"Oliver Bearman",team:"Haas"},
 ];
-
 const RACES = [
   {id:1,round:"R1",name:"Australian GP",country:"Australia",flag:"🇦🇺",date:"Mar 15, 2026",sprint:false},
   {id:2,round:"R2",name:"Chinese GP",country:"China",flag:"🇨🇳",date:"Mar 22, 2026",sprint:true},
@@ -278,139 +499,61 @@ const RACES = [
   {id:23,round:"R23",name:"Las Vegas GP",country:"USA",flag:"🇺🇸",date:"Nov 21, 2026",sprint:false},
   {id:24,round:"R24",name:"Abu Dhabi GP",country:"UAE",flag:"🇦🇪",date:"Dec 6, 2026",sprint:false},
 ];
-
 const POINTS = {p1:25,p2:18,p3:15,pole:8,fl:10,dnf:5};
-const PRESET_COLORS = ['#e10600','#00d46a','#3b82f6','#f59e0b','#a855f7','#ec4899','#06b6d4','#84cc16'];
+const PRESET_COLORS = ['#e10600','#30d158','#0071e3','#ff9f0a','#bf5af2','#ff375f','#5ac8fa','#34c759'];
 
 // ── STATE ──
 let state = {players:[],predictions:{},results:{}};
 let currentPage = 'calendar';
 
 DOC.onSnapshot(snap => {
-  if (snap.exists) {
-    state = snap.data();
-    state.predictions = state.predictions || {};
-    state.results = state.results || {};
-    document.getElementById('sync-dot').classList.add('live');
-    document.getElementById('setup-overlay').style.display = 'none';
-  } else {
-    document.getElementById('sync-dot').classList.add('live');
-    document.getElementById('setup-overlay').style.display = 'flex';
-  }
+  state = snap.exists ? snap.data() : {players:[],predictions:{},results:{}};
+  state.predictions = state.predictions||{}; state.results = state.results||{};
+  document.getElementById('sync-dot').classList.add('live');
+  document.getElementById('setup-overlay').style.display = (snap.exists && state.players.length) ? 'none' : 'flex';
   renderPage(currentPage);
-}, () => showToast('Connection error — check your internet', true));
+}, () => showToast('Connection error', true));
 
 async function saveState() {
-  try { await DOC.set(state); }
-  catch(e) { showToast('Save failed — check connection', true); }
+  try { await DOC.set(state); } catch(e) { showToast('Save failed', true); }
 }
 
-// ── F1 RESULTS FETCHING ──
-// Maps Ergast API family names to our full driver names
-function matchDriverName(givenName, familyName) {
-  const full = givenName + ' ' + familyName;
-  // Try exact match first
-  let match = DRIVERS.find(d => d.name.toLowerCase() === full.toLowerCase());
-  if (match) return match.name;
-  // Try family name only (handles accent differences)
-  const fam = familyName.toLowerCase().replace(/ü/g,'u').replace(/é/g,'e').replace(/ä/g,'a').replace(/ö/g,'o');
-  match = DRIVERS.find(d => {
-    const parts = d.name.toLowerCase().split(' ');
-    const dFam = parts[parts.length-1].replace(/ü/g,'u').replace(/é/g,'e').replace(/ä/g,'a').replace(/ö/g,'o');
-    return dFam === fam;
-  });
-  return match ? match.name : full;
-}
-
-async function fetchF1Results(roundNumber) {
-  const BASE = 'https://api.jolpi.ca/ergast/f1/2026';
-  try {
-    // Fetch race results and qualifying in parallel
-    const [raceRes, qualRes] = await Promise.all([
-      fetch(`${BASE}/${roundNumber}/results.json`),
-      fetch(`${BASE}/${roundNumber}/qualifying.json`)
-    ]);
-
-    if (!raceRes.ok) throw new Error('Race data not available yet');
-
-    const raceData = await raceRes.json();
-    const race = raceData?.MRData?.RaceTable?.Races?.[0];
-    if (!race) throw new Error('No race data found');
-
-    const results = race.Results || [];
-
-    // P1, P2, P3
-    const p1 = results[0] ? matchDriverName(results[0].Driver.givenName, results[0].Driver.familyName) : '';
-    const p2 = results[1] ? matchDriverName(results[1].Driver.givenName, results[1].Driver.familyName) : '';
-    const p3 = results[2] ? matchDriverName(results[2].Driver.givenName, results[2].Driver.familyName) : '';
-
-    // Fastest lap — find driver with FastestLap.rank === "1"
-    const flResult = results.find(r => r.FastestLap?.rank === '1');
-    const fl = flResult ? matchDriverName(flResult.Driver.givenName, flResult.Driver.familyName) : '';
-
-    // First DNF — find drivers who didn't finish (status not "Finished" and not "+X Laps")
-    const dnfResult = results.find(r => {
-      const s = r.status || '';
-      return s !== 'Finished' && !s.startsWith('+') && !s.includes('Lap');
-    });
-    const dnf = dnfResult ? matchDriverName(dnfResult.Driver.givenName, dnfResult.Driver.familyName) : '';
-
-    // Pole from qualifying
-    let pole = '';
-    if (qualRes.ok) {
-      const qualData = await qualRes.json();
-      const qualRace = qualData?.MRData?.RaceTable?.Races?.[0];
-      const qualResults = qualRace?.QualifyingResults || [];
-      const poleDriver = qualResults.find(r => r.position === '1');
-      if (poleDriver) pole = matchDriverName(poleDriver.Driver.givenName, poleDriver.Driver.familyName);
-    }
-
-    return { p1, p2, p3, pole, fl, dnf, fetched: true };
-  } catch(e) {
-    console.error('F1 fetch error:', e);
-    return null;
-  }
-}
-
-// ── NAVIGATION ──
+// ── NAV ──
 function showPage(name, btn) {
   currentPage = name;
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  if (btn) btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   renderPage(name);
 }
 function renderPage(n) {
-  if (n==='calendar') renderCalendar();
-  if (n==='leaderboard') renderLeaderboard();
-  if (n==='history') renderHistory();
-  if (n==='settings') renderSettingsPlayers();
+  if(n==='calendar') renderCalendar();
+  if(n==='leaderboard') renderLeaderboard();
+  if(n==='history') renderHistory();
+  if(n==='settings') renderSettingsPlayers();
 }
 
 // ── SETUP ──
-let setupPlayerCount = 2;
+let setupCount = 2;
 function addSetupPlayer() {
-  if (setupPlayerCount >= 8) return;
-  const grid = document.getElementById('setup-player-grid');
-  const i = setupPlayerCount++;
-  const row = document.createElement('div');
-  row.className = 'player-input-row';
-  row.innerHTML = `<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="setup-color-${i}"><input type="text" placeholder="Player ${i+1} name" id="setup-name-${i}">`;
-  grid.appendChild(row);
+  if(setupCount>=8) return;
+  const g = document.getElementById('setup-player-grid');
+  const i = setupCount++;
+  const r = document.createElement('div'); r.className='player-row';
+  r.innerHTML=`<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="setup-color-${i}"><input type="text" placeholder="Player ${i+1} name" id="setup-name-${i}">`;
+  g.appendChild(r);
 }
 async function setupDone() {
-  const players = [];
-  for (let i=0;i<setupPlayerCount;i++) {
-    const name = document.getElementById('setup-name-'+i)?.value.trim();
-    const color = document.getElementById('setup-color-'+i)?.value || PRESET_COLORS[i];
-    if (name) players.push({id:'p'+Date.now()+i, name, color, initials:name.slice(0,2).toUpperCase()});
+  const players=[];
+  for(let i=0;i<setupCount;i++){
+    const name=document.getElementById('setup-name-'+i)?.value.trim();
+    const color=document.getElementById('setup-color-'+i)?.value||PRESET_COLORS[i];
+    if(name) players.push({id:'p'+Date.now()+i,name,color,initials:name.slice(0,2).toUpperCase()});
   }
-  if (!players.length) { showToast('Add at least one player!', true); return; }
-  const btn = document.getElementById('setup-btn');
-  btn.disabled=true; btn.textContent='Saving...';
-  state = {players, predictions:{}, results:{}};
-  await saveState();
+  if(!players.length){showToast('Add at least one player',true);return;}
+  const btn=document.getElementById('setup-btn'); btn.disabled=true; btn.textContent='Saving…';
+  state={players,predictions:{},results:{}}; await saveState();
   document.getElementById('setup-overlay').style.display='none';
   showToast('Welcome to the league! 🏁');
 }
@@ -418,164 +561,215 @@ async function setupDone() {
 // ── CALENDAR ──
 function renderCalendar() {
   const today = new Date();
-  const upcoming = RACES.filter(r => new Date(r.date)>=today && !state.results[r.id]).length;
+  const upcoming = RACES.filter(r=>new Date(r.date)>=today&&!state.results[r.id]);
+  const past = RACES.filter(r=>new Date(r.date)<today&&!state.results[r.id]);
+  const scored = RACES.filter(r=>state.results[r.id]);
   const el = document.getElementById('page-calendar');
-  el.innerHTML = `<div class="section-title">🏁 2026 Season Calendar <span class="badge">${upcoming} upcoming</span></div><div class="race-grid" id="race-list"></div>`;
-  const list = document.getElementById('race-list');
-  RACES.forEach(race => {
-    const isPast = new Date(race.date) < today;
-    const hasResult = !!state.results[race.id];
-    const anyPred = state.players.some(p => state.predictions[race.id]?.[p.id]);
-    const card = document.createElement('div');
-    card.className = 'race-card' + (anyPred && !hasResult ? ' predicted' : '');
-    const sprint = race.sprint ? `<span style="background:rgba(255,215,0,.15);color:var(--gold);font-size:.7rem;padding:2px 6px;border-radius:10px;margin-left:6px;">Sprint</span>` : '';
 
-    let action = '';
-    if (hasResult) {
-      action = `<span class="race-status done">✓ Scored</span>`;
-      card.style.cursor = 'default';
-    } else if (isPast) {
-      // Show auto-fetch button as primary, manual as secondary
-      action = `<div class="race-actions">
-        <button class="btn btn-sm btn-blue" id="fetch-btn-${race.id}" onclick="openResultsModalWithFetch(${race.id},event)">🔗 Fetch Results</button>
-        <button class="btn btn-sm btn-ghost" onclick="openResultsModal(${race.id},event)" title="Enter manually">✏️</button>
+  let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} coming up</div>`;
+
+  function raceCardHTML(race) {
+    const isUpcoming = new Date(race.date) >= today;
+    const hasResult = !!state.results[race.id];
+    const preds = state.predictions[race.id] || {};
+
+    const tags = `<div class="race-tags">
+      <span class="tag tag-round">${race.round}</span>
+      ${race.sprint ? '<span class="tag tag-sprint">Sprint</span>' : ''}
+      ${hasResult ? '<span class="tag tag-scored">✓ Scored</span>' : ''}
+      ${!hasResult && isUpcoming ? '<span class="tag tag-upcoming">Predict</span>' : ''}
+    </div>`;
+
+    let actionBtn = '';
+    if(hasResult) {
+      actionBtn = '';
+    } else if(!isUpcoming) {
+      actionBtn = `<div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="openResultsModalWithFetch(${race.id},event)">🔗 Fetch</button>
+        <button class="btn btn-ghost btn-sm" onclick="openResultsModal(${race.id},event)" title="Manual entry">✏️</button>
       </div>`;
-      card.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') openPredictModal(race.id); });
-    } else {
-      action = `<span class="race-status open">Predict</span>`;
-      card.addEventListener('click', () => openPredictModal(race.id));
     }
 
-    card.innerHTML = `<div class="race-left"><span class="race-flag">${race.flag}</span><div class="round-badge">${race.round}</div><div class="race-info"><h3>${race.name}${sprint}</h3><p>${race.date} · ${race.country}</p></div></div>${action}`;
-    list.appendChild(card);
+    // Predictions strip for upcoming races
+    let predsStrip = '';
+    if(isUpcoming && !hasResult && state.players.length) {
+      const chips = state.players.map(p => {
+        const pred = preds[p.id];
+        const pick = pred?.p1 ? pred.p1.split(' ').slice(-1)[0] : null;
+        return `<div class="pred-chip">
+          <div class="pred-avatar" style="background:${p.color}">${p.initials}</div>
+          <div class="pred-info">
+            <div class="pred-player">${p.name}</div>
+            <div class="pred-pick ${pick?'':'empty'}">${pick||'No pick yet'}</div>
+          </div>
+        </div>`;
+      }).join('');
+      predsStrip = `<div class="predictions-strip">${chips}</div>`;
+    }
+
+    return `
+      <div class="race-card${hasResult?' scored':''}" data-race="${race.id}" onclick="handleRaceClick(${race.id},event,${isUpcoming},${hasResult})">
+        <div class="race-main">
+          <div class="race-left">
+            <span class="race-flag">${race.flag}</span>
+            <div class="race-meta">
+              <div class="race-name">${race.name}</div>
+              <div class="race-date">${race.date} · ${race.country}</div>
+              ${tags}
+            </div>
+          </div>
+          <div class="race-action">${actionBtn}</div>
+        </div>
+        ${predsStrip}
+      </div>`;
+  }
+
+  if(upcoming.length) {
+    html += `<div class="section-header">Upcoming</div><div class="race-list">${upcoming.map(raceCardHTML).join('')}</div>`;
+  }
+  if(past.length) {
+    html += `<div class="section-header">Needs Results</div><div class="race-list">${past.map(raceCardHTML).join('')}</div>`;
+  }
+  if(scored.length) {
+    html += `<div class="section-header">Completed</div><div class="race-list">${scored.map(raceCardHTML).join('')}</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function handleRaceClick(raceId, e, isUpcoming, hasResult) {
+  if(e.target.tagName==='BUTTON') return;
+  if(hasResult) return;
+  openPredictModal(raceId);
+}
+
+// ── F1 FETCH ──
+function matchDriverName(given, family) {
+  const full = given+' '+family;
+  let m = DRIVERS.find(d=>d.name.toLowerCase()===full.toLowerCase());
+  if(m) return m.name;
+  const fam = family.toLowerCase().replace(/[üúùû]/g,'u').replace(/[éèê]/g,'e').replace(/[äàâ]/g,'a').replace(/[öôò]/g,'o');
+  m = DRIVERS.find(d=>{
+    const p=d.name.toLowerCase().split(' '); const df=p[p.length-1].replace(/[üúùû]/g,'u').replace(/[éèê]/g,'e').replace(/[äàâ]/g,'a').replace(/[öôò]/g,'o');
+    return df===fam;
   });
+  return m?m.name:full;
+}
+async function fetchF1Results(roundNumber) {
+  const BASE='https://api.jolpi.ca/ergast/f1/2026';
+  try {
+    const [raceRes,qualRes] = await Promise.all([fetch(`${BASE}/${roundNumber}/results.json`),fetch(`${BASE}/${roundNumber}/qualifying.json`)]);
+    if(!raceRes.ok) throw new Error('Not available');
+    const raceData=await raceRes.json();
+    const race=raceData?.MRData?.RaceTable?.Races?.[0];
+    if(!race) throw new Error('No data');
+    const res=race.Results||[];
+    const p1=res[0]?matchDriverName(res[0].Driver.givenName,res[0].Driver.familyName):'';
+    const p2=res[1]?matchDriverName(res[1].Driver.givenName,res[1].Driver.familyName):'';
+    const p3=res[2]?matchDriverName(res[2].Driver.givenName,res[2].Driver.familyName):'';
+    const flRes=res.find(r=>r.FastestLap?.rank==='1');
+    const fl=flRes?matchDriverName(flRes.Driver.givenName,flRes.Driver.familyName):'';
+    const dnfRes=res.find(r=>{const s=r.status||'';return s!=='Finished'&&!s.startsWith('+')&&!s.includes('Lap');});
+    const dnf=dnfRes?matchDriverName(dnfRes.Driver.givenName,dnfRes.Driver.familyName):'';
+    let pole='';
+    if(qualRes.ok){const qd=await qualRes.json();const qr=qd?.MRData?.RaceTable?.Races?.[0]?.QualifyingResults||[];const pd=qr.find(r=>r.position==='1');if(pd)pole=matchDriverName(pd.Driver.givenName,pd.Driver.familyName);}
+    return {p1,p2,p3,pole,fl,dnf,fetched:true};
+  } catch(e){return null;}
 }
 
-// ── RESULTS MODAL (manual) ──
-let currentResultRaceId = null;
-
+// ── RESULTS MODAL ──
+let currentResultRaceId=null;
 function populateResultSelects() {
-  const opts = `<option value="">Select...</option>` + DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
-  ['res-p1','res-p2','res-p3','res-pole','res-fl'].forEach(id => document.getElementById(id).innerHTML = opts);
-  document.getElementById('res-dnf').innerHTML = `<option value="">None</option>` + DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
+  const opts=`<option value="">Select…</option>`+DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
+  ['res-p1','res-p2','res-p3','res-pole','res-fl'].forEach(id=>document.getElementById(id).innerHTML=opts);
+  document.getElementById('res-dnf').innerHTML=`<option value="">None</option>`+DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
 }
-
-function openResultsModal(raceId, e) {
+function openResultsModal(raceId,e) {
   if(e) e.stopPropagation();
-  currentResultRaceId = raceId;
-  const race = RACES.find(r => r.id === raceId);
-  document.getElementById('results-modal-title').textContent = 'Results: ' + race.flag + ' ' + race.name;
-  document.getElementById('results-modal-subtitle').textContent = 'Enter the actual race results below';
-  document.getElementById('fetch-banner').style.display = 'none';
-  document.getElementById('refetch-btn').style.display = 'none';
+  currentResultRaceId=raceId;
+  const race=RACES.find(r=>r.id===raceId);
+  document.getElementById('results-modal-title').textContent=race.flag+' '+race.name;
+  document.getElementById('results-modal-subtitle').textContent='Enter the actual race results';
+  document.getElementById('fetch-banner').style.display='none';
+  document.getElementById('refetch-btn').style.display='none';
   populateResultSelects();
-  const r = state.results[raceId] || {};
-  ['p1','p2','p3','pole','fl','dnf'].forEach(k => { const el = document.getElementById('res-'+k); if(el) el.value = r[k]||''; });
+  const r=state.results[raceId]||{};
+  ['p1','p2','p3','pole','fl','dnf'].forEach(k=>{const el=document.getElementById('res-'+k);if(el)el.value=r[k]||'';});
   document.getElementById('results-modal').classList.add('open');
 }
-
-async function openResultsModalWithFetch(raceId, e) {
+async function openResultsModalWithFetch(raceId,e) {
   if(e) e.stopPropagation();
-  currentResultRaceId = raceId;
-  const race = RACES.find(r => r.id === raceId);
-
-  // Show modal immediately with loading state
-  document.getElementById('results-modal-title').textContent = race.flag + ' ' + race.name;
-  document.getElementById('results-modal-subtitle').textContent = '⏳ Fetching from F1 official data...';
-  document.getElementById('fetch-banner').style.display = 'none';
-  document.getElementById('refetch-btn').style.display = 'inline-block';
+  currentResultRaceId=raceId;
+  const race=RACES.find(r=>r.id===raceId);
+  document.getElementById('results-modal-title').textContent=race.flag+' '+race.name;
+  document.getElementById('results-modal-subtitle').textContent='⏳ Fetching from F1 official data…';
+  document.getElementById('fetch-banner').style.display='none';
+  document.getElementById('refetch-btn').style.display='inline-flex';
   populateResultSelects();
   document.getElementById('results-modal').classList.add('open');
-
   await loadFetchedResults(raceId);
 }
-
 async function loadFetchedResults(raceId) {
-  const race = RACES.find(r => r.id === raceId);
-  document.getElementById('results-modal-subtitle').textContent = '⏳ Fetching from F1 official data...';
-
-  const fetched = await fetchF1Results(race.id);
-
-  if (fetched) {
-    document.getElementById('results-modal-subtitle').textContent = 'Review and confirm the results below';
-    document.getElementById('fetch-banner').style.display = 'flex';
-    // Fill in the selects
-    ['p1','p2','p3','pole','fl','dnf'].forEach(k => {
-      const el = document.getElementById('res-'+k);
-      if (el && fetched[k]) el.value = fetched[k];
-    });
-    showToast('Results fetched! 🏁');
+  document.getElementById('results-modal-subtitle').textContent='⏳ Fetching from F1 official data…';
+  const fetched=await fetchF1Results(raceId);
+  if(fetched){
+    document.getElementById('results-modal-subtitle').textContent='Review and confirm the results below';
+    document.getElementById('fetch-banner').style.display='flex';
+    ['p1','p2','p3','pole','fl','dnf'].forEach(k=>{const el=document.getElementById('res-'+k);if(el&&fetched[k])el.value=fetched[k];});
+    showToast('Results fetched 🏁');
   } else {
-    document.getElementById('results-modal-subtitle').textContent = 'Results not available yet — enter manually below';
-    document.getElementById('fetch-banner').style.display = 'none';
-    showToast('Could not fetch results — enter manually', true);
-    // Pre-fill with any saved results
-    const r = state.results[raceId] || {};
-    ['p1','p2','p3','pole','fl','dnf'].forEach(k => { const el = document.getElementById('res-'+k); if(el) el.value = r[k]||''; });
+    document.getElementById('results-modal-subtitle').textContent='Results not available yet — enter manually';
+    showToast('Could not fetch — enter manually', true);
+    const r=state.results[raceId]||{};
+    ['p1','p2','p3','pole','fl','dnf'].forEach(k=>{const el=document.getElementById('res-'+k);if(el)el.value=r[k]||'';});
   }
 }
-
-async function refetchResults() {
-  await loadFetchedResults(currentResultRaceId);
-}
-
-function closeResultsModal() { document.getElementById('results-modal').classList.remove('open'); }
-
-async function saveResults() {
-  const result = {
-    p1: document.getElementById('res-p1').value,
-    p2: document.getElementById('res-p2').value,
-    p3: document.getElementById('res-p3').value,
-    pole: document.getElementById('res-pole').value,
-    fl: document.getElementById('res-fl').value,
-    dnf: document.getElementById('res-dnf').value
-  };
-  if (!result.p1) { showToast('Please enter the race winner', true); return; }
-  state.results[currentResultRaceId] = result;
-  await saveState();
-  closeResultsModal();
-  showToast('Results saved & points scored! 🏆');
+async function refetchResults(){ await loadFetchedResults(currentResultRaceId); }
+function closeResultsModal(){ document.getElementById('results-modal').classList.remove('open'); }
+async function saveResults(){
+  const result={p1:document.getElementById('res-p1').value,p2:document.getElementById('res-p2').value,p3:document.getElementById('res-p3').value,pole:document.getElementById('res-pole').value,fl:document.getElementById('res-fl').value,dnf:document.getElementById('res-dnf').value};
+  if(!result.p1){showToast('Please enter the winner',true);return;}
+  state.results[currentResultRaceId]=result; await saveState();
+  closeResultsModal(); showToast('Results scored! 🏆');
 }
 
 // ── PREDICT MODAL ──
-let currentRaceId=null, currentPlayerId=null, tempPreds={};
-function openPredictModal(raceId) {
-  if (!state.players.length) return;
+let currentRaceId=null,currentPlayerId=null,tempPreds={};
+function openPredictModal(raceId){
+  if(!state.players.length) return;
   currentRaceId=raceId; currentPlayerId=state.players[0].id; tempPreds={};
-  const race = RACES.find(r=>r.id===raceId);
-  document.getElementById('modal-title').textContent = race.flag+' '+race.name;
-  document.getElementById('modal-subtitle').textContent = race.date;
-  document.getElementById('player-tabs').innerHTML = state.players.map((p,i)=>`<button class="player-tab ${i===0?'active':''}" style="${i===0?'background:'+p.color+';border-color:'+p.color+';color:#fff':''}" onclick="switchPredictPlayer('${p.id}',this,'${p.color}')">${p.name}</button>`).join('');
-  ['winner-grid','pole-grid'].forEach(id=>{
-    document.getElementById(id).innerHTML = DRIVERS.map(d=>`<button class="driver-btn" data-name="${d.name}" onclick="selectDriverBtn(this,'${id}')">${d.name}<span class="team-tag">${d.team}</span></button>`).join('');
-  });
-  const opts = `<option value="">Select driver...</option>`+DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
+  const race=RACES.find(r=>r.id===raceId);
+  document.getElementById('modal-title').textContent=race.flag+' '+race.name;
+  document.getElementById('modal-subtitle').textContent=race.date;
+  document.getElementById('player-tabs').innerHTML=state.players.map((p,i)=>`<button class="player-tab ${i===0?'active':''}" style="${i===0?'background:'+p.color+';border-color:'+p.color:''}" onclick="switchPredictPlayer('${p.id}',this,'${p.color}')">${p.name}</button>`).join('');
+  ['winner-grid','pole-grid'].forEach(id=>{document.getElementById(id).innerHTML=DRIVERS.map(d=>`<button class="driver-btn" data-name="${d.name}" onclick="selectDriverBtn(this,'${id}')">${d.name}<span class="driver-team">${d.team}</span></button>`).join('');});
+  const opts=`<option value="">Select driver…</option>`+DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
   ['pred-p2','pred-p3','pred-fl'].forEach(id=>document.getElementById(id).innerHTML=opts);
   document.getElementById('pred-dnf').innerHTML=`<option value="">No prediction</option>`+DRIVERS.map(d=>`<option value="${d.name}">${d.name} (${d.team})</option>`).join('');
   loadPredForPlayer();
   document.getElementById('predict-modal').classList.add('open');
 }
-function switchPredictPlayer(pid, btn, color) {
+function switchPredictPlayer(pid,btn,color){
   captureCurrentPred(); currentPlayerId=pid;
   document.querySelectorAll('.player-tab').forEach(t=>{t.classList.remove('active');t.style.cssText='';});
   btn.classList.add('active'); btn.style.background=color; btn.style.borderColor=color; btn.style.color='#fff';
   loadPredForPlayer();
 }
-function selectDriverBtn(btn, gridId) {
+function selectDriverBtn(btn,gridId){
   document.getElementById(gridId).querySelectorAll('.driver-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
 }
-function loadPredForPlayer() {
-  const pred = tempPreds[currentPlayerId] || state.predictions[currentRaceId]?.[currentPlayerId] || {};
+function loadPredForPlayer(){
+  const pred=tempPreds[currentPlayerId]||state.predictions[currentRaceId]?.[currentPlayerId]||{};
   document.querySelectorAll('#winner-grid .driver-btn,#pole-grid .driver-btn').forEach(b=>b.classList.remove('selected'));
-  if (pred.p1) document.querySelectorAll('#winner-grid .driver-btn').forEach(b=>{if(b.dataset.name===pred.p1)b.classList.add('selected');});
-  if (pred.pole) document.querySelectorAll('#pole-grid .driver-btn').forEach(b=>{if(b.dataset.name===pred.pole)b.classList.add('selected');});
+  if(pred.p1) document.querySelectorAll('#winner-grid .driver-btn').forEach(b=>{if(b.dataset.name===pred.p1)b.classList.add('selected');});
+  if(pred.pole) document.querySelectorAll('#pole-grid .driver-btn').forEach(b=>{if(b.dataset.name===pred.pole)b.classList.add('selected');});
   document.getElementById('pred-p2').value=pred.p2||'';
   document.getElementById('pred-p3').value=pred.p3||'';
   document.getElementById('pred-fl').value=pred.fl||'';
   document.getElementById('pred-dnf').value=pred.dnf||'';
 }
-function captureCurrentPred() {
+function captureCurrentPred(){
   tempPreds[currentPlayerId]={
     p1:document.querySelector('#winner-grid .driver-btn.selected')?.dataset.name||'',
     p2:document.getElementById('pred-p2').value,
@@ -585,25 +779,21 @@ function captureCurrentPred() {
     dnf:document.getElementById('pred-dnf').value,
   };
 }
-async function savePrediction() {
+async function savePrediction(){
   captureCurrentPred();
-  const btn=document.getElementById('save-pred-btn');
-  btn.disabled=true; btn.textContent='Saving...';
-  if (!state.predictions[currentRaceId]) state.predictions[currentRaceId]={};
-  Object.assign(state.predictions[currentRaceId], tempPreds);
-  await saveState();
-  btn.disabled=false; btn.textContent='Save Prediction ✓';
-  closeModal();
-  showToast('Predictions saved! 🏁');
+  const btn=document.getElementById('save-pred-btn'); btn.disabled=true; btn.textContent='Saving…';
+  if(!state.predictions[currentRaceId]) state.predictions[currentRaceId]={};
+  Object.assign(state.predictions[currentRaceId],tempPreds);
+  await saveState(); btn.disabled=false; btn.textContent='Save Prediction';
+  closeModal(); showToast('Predictions saved 🏁');
 }
-function closeModal() { document.getElementById('predict-modal').classList.remove('open'); }
+function closeModal(){ document.getElementById('predict-modal').classList.remove('open'); }
 
 // ── SCORING ──
-function calcPlayerPoints(playerId) {
-  let total=0, races=0;
-  const bd={p1:0,p2:0,p3:0,pole:0,fl:0,dnf:0};
+function calcPlayerPoints(pid){
+  let total=0,races=0; const bd={p1:0,p2:0,p3:0,pole:0,fl:0,dnf:0};
   Object.entries(state.results).forEach(([raceId,result])=>{
-    const pred=state.predictions[raceId]?.[playerId]; if(!pred) return; races++;
+    const pred=state.predictions[raceId]?.[pid]; if(!pred) return; races++;
     if(pred.p1&&pred.p1===result.p1){total+=POINTS.p1;bd.p1++;}
     if(pred.p2&&pred.p2===result.p2){total+=POINTS.p2;bd.p2++;}
     if(pred.p3&&pred.p3===result.p3){total+=POINTS.p3;bd.p3++;}
@@ -615,104 +805,125 @@ function calcPlayerPoints(playerId) {
 }
 
 // ── LEADERBOARD ──
-function renderLeaderboard() {
+function renderLeaderboard(){
   const el=document.getElementById('page-leaderboard');
-  if (!state.players.length) { el.innerHTML='<div class="empty-state"><div class="icon">👥</div><h3>No players yet</h3><p>Add players on the Players tab</p></div>'; return; }
-  const scored=state.players.map(p=>({...p,...calcPlayerPoints(p.id)})).sort((a,b)=>b.total-a.total);
-  el.innerHTML=`<div class="section-title">🏆 Leaderboard</div>
-  <div class="points-guide"><h3>📊 Points System</h3><div class="points-list">
-    <div class="points-item"><span>🥇 Race Winner</span><span class="pts">+25 pts</span></div>
-    <div class="points-item"><span>🥈 P2 correct</span><span class="pts">+18 pts</span></div>
-    <div class="points-item"><span>🥉 P3 correct</span><span class="pts">+15 pts</span></div>
-    <div class="points-item"><span>⚡ Fastest Lap</span><span class="pts">+10 pts</span></div>
-    <div class="points-item"><span>🏎️ Pole Position</span><span class="pts">+8 pts</span></div>
-    <div class="points-item"><span>💥 DNF correct</span><span class="pts">+5 pts</span></div>
-  </div></div>
-  <div class="leaderboard">${scored.map((p,i)=>`
-    <div class="lb-card rank-${i+1}">
-      <div class="rank-num">${i+1}</div>
+  if(!state.players.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div><h3>No players yet</h3><p>Add players on the Players tab</p></div>';return;}
+  const ranked=state.players.map(p=>({...p,...calcPlayerPoints(p.id)})).sort((a,b)=>b.total-a.total);
+  const rankClass=['p1','p2','p3'];
+  el.innerHTML=`
+  <div class="page-title">Leaderboard</div>
+  <div class="page-sub">Season standings</div>
+  <div class="points-card">
+    <h3>Points System</h3>
+    <div class="points-grid">
+      <div class="points-item"><span class="points-label">🥇 Winner</span><span class="points-val">25 pts</span></div>
+      <div class="points-item"><span class="points-label">🥈 2nd Place</span><span class="points-val">18 pts</span></div>
+      <div class="points-item"><span class="points-label">🥉 3rd Place</span><span class="points-val">15 pts</span></div>
+      <div class="points-item"><span class="points-label">⚡ Fastest Lap</span><span class="points-val">10 pts</span></div>
+      <div class="points-item"><span class="points-label">🏎️ Pole</span><span class="points-val">8 pts</span></div>
+      <div class="points-item"><span class="points-label">💥 DNF</span><span class="points-val">5 pts</span></div>
+    </div>
+  </div>
+  <div class="lb-list">${ranked.map((p,i)=>`
+    <div class="lb-card ${rankClass[i]||''}">
+      <div class="lb-rank">${i+1}</div>
       <div class="lb-avatar" style="background:${p.color}">${p.initials}</div>
-      <div class="lb-info"><h3>${p.name}</h3><p>${p.races} race${p.races!==1?'s':''} predicted</p>
-        <div class="points-breakdown">
-          ${p.breakdown.p1?`<div class="point-pill">🥇 <b>${p.breakdown.p1}</b> wins</div>`:''}
-          ${p.breakdown.p2?`<div class="point-pill">🥈 <b>${p.breakdown.p2}</b> P2s</div>`:''}
-          ${p.breakdown.p3?`<div class="point-pill">🥉 <b>${p.breakdown.p3}</b> P3s</div>`:''}
-          ${p.breakdown.pole?`<div class="point-pill">🏎️ <b>${p.breakdown.pole}</b> poles</div>`:''}
-          ${p.breakdown.fl?`<div class="point-pill">⚡ <b>${p.breakdown.fl}</b> FLs</div>`:''}
-          ${p.breakdown.dnf?`<div class="point-pill">💥 <b>${p.breakdown.dnf}</b> DNFs</div>`:''}
+      <div class="lb-info">
+        <div class="lb-name">${p.name}</div>
+        <div class="lb-sub">${p.races} race${p.races!==1?'s':''} predicted</div>
+        <div class="lb-pills">
+          ${p.breakdown.p1?`<span class="lb-pill">🥇 ${p.breakdown.p1}W</span>`:''}
+          ${p.breakdown.p2?`<span class="lb-pill">🥈 ${p.breakdown.p2}</span>`:''}
+          ${p.breakdown.p3?`<span class="lb-pill">🥉 ${p.breakdown.p3}</span>`:''}
+          ${p.breakdown.pole?`<span class="lb-pill">🏎️ ${p.breakdown.pole}</span>`:''}
+          ${p.breakdown.fl?`<span class="lb-pill">⚡ ${p.breakdown.fl}</span>`:''}
+          ${p.breakdown.dnf?`<span class="lb-pill">💥 ${p.breakdown.dnf}</span>`:''}
         </div>
       </div>
-      <div class="lb-points">${p.total}<span> pts</span></div>
+      <div style="text-align:right">
+        <div class="lb-points">${p.total}</div>
+        <div class="lb-pts-label">points</div>
+      </div>
     </div>`).join('')}
   </div>`;
 }
 
 // ── HISTORY ──
-function renderHistory() {
+function renderHistory(){
   const el=document.getElementById('page-history');
-  const pastRaces=RACES.filter(r=>state.results[r.id]);
-  if (!pastRaces.length) { el.innerHTML='<div class="section-title">📋 Past Races</div><div class="empty-state"><div class="icon">📋</div><h3>No results yet</h3><p>After a race, click "Fetch Results" on the calendar to score predictions automatically</p></div>'; return; }
-  const rows=pastRaces.map(race=>{
+  const past=RACES.filter(r=>state.results[r.id]);
+  if(!past.length){el.innerHTML='<div class="page-title">History</div><div class="page-sub">Past race results</div><div class="empty"><div class="empty-icon">📋</div><h3>No results yet</h3><p>After a race, click Fetch Results on the calendar</p></div>';return;}
+  const rows=past.map(race=>{
     const result=state.results[race.id];
     const playerRows=state.players.map(p=>{
       const pred=state.predictions[race.id]?.[p.id];
-      if (!pred) return `<tr><td><b>${p.name}</b></td><td colspan="6" style="color:var(--muted);font-style:italic">No prediction</td><td>0 pts</td></tr>`;
+      if(!pred) return `<tr><td><b>${p.name}</b></td><td colspan="6" style="color:var(--text3);font-style:italic">No pick</td><td>—</td></tr>`;
       let pts=0;
-      const f=(key,a,b)=>{const m=a&&a===b;if(m)pts+=POINTS[key];return a?`<span class="${m?'correct':'wrong'}">${a.split(' ').slice(-1)[0]} ${m?'✓':'✗'}</span>`:'<span style="color:var(--muted)">—</span>';};
+      const f=(key,a,b)=>{const m=a&&a===b;if(m)pts+=POINTS[key];return a?`<span class="${m?'correct':'wrong'}">${a.split(' ').slice(-1)[0]}${m?' ✓':''}</span>`:'<span style="color:var(--text3)">—</span>';};
       const p1=f('p1',pred.p1,result.p1),p2=f('p2',pred.p2,result.p2),p3=f('p3',pred.p3,result.p3),po=f('pole',pred.pole,result.pole),fl=f('fl',pred.fl,result.fl),dn=f('dnf',pred.dnf,result.dnf);
-      return `<tr><td><b style="color:${p.color}">${p.name}</b></td><td>${p1}</td><td>${p2}</td><td>${p3}</td><td>${po}</td><td>${fl}</td><td>${dn}</td><td><span class="pts-badge">+${pts}</span></td></tr>`;
+      return `<tr><td><b style="color:${p.color}">${p.name}</b></td><td>${p1}</td><td>${p2}</td><td>${p3}</td><td>${po}</td><td>${fl}</td><td>${dn}</td><td><span class="pts-chip">+${pts}</span></td></tr>`;
     }).join('');
-    return `<div class="history-race">
-      <div class="history-race-header" onclick="this.nextElementSibling.classList.toggle('open')">
-        <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:1.4rem">${race.flag}</span><div><b>${race.name}</b><div style="font-size:.8rem;color:var(--muted);margin-top:2px">${race.date}</div></div></div>
-        <div style="text-align:right;font-size:.82rem;color:var(--muted)"><div>🥇 ${result.p1?.split(' ').slice(-1)[0]||'?'}</div><div style="margin-top:2px">⚡ ${result.fl?.split(' ').slice(-1)[0]||'?'}</div></div>
+    return `<div class="history-card">
+      <div class="history-header" onclick="this.nextElementSibling.classList.toggle('open')">
+        <div class="history-header-left">
+          <span style="font-size:1.5rem">${race.flag}</span>
+          <div>
+            <div style="font-weight:600">${race.name}</div>
+            <div style="font-size:.78rem;color:var(--text2);margin-top:2px">${race.date}</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:.8rem;color:var(--text2)">
+          <div>🥇 ${result.p1?.split(' ').slice(-1)[0]||'?'}</div>
+          <div style="margin-top:2px">⚡ ${result.fl?.split(' ').slice(-1)[0]||'?'}</div>
+        </div>
       </div>
-      <div class="history-race-body">
-        <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Actual: 1st ${result.p1||'?'} · 2nd ${result.p2||'?'} · 3rd ${result.p3||'?'} · Pole ${result.pole||'?'} · FL ${result.fl||'?'}${result.dnf?' · DNF '+result.dnf:''}</div>
-        <table class="pred-table"><thead><tr><th>Player</th><th>Winner</th><th>P2</th><th>P3</th><th>Pole</th><th>F.Lap</th><th>DNF</th><th>Pts</th></tr></thead><tbody>${playerRows}</tbody></table>
-      </div></div>`;
+      <div class="history-body">
+        <div class="history-actual">1st ${result.p1||'?'} · 2nd ${result.p2||'?'} · 3rd ${result.p3||'?'} · Pole ${result.pole||'?'} · FL ${result.fl||'?'}${result.dnf?' · DNF '+result.dnf:''}</div>
+        <table class="pred-table"><thead><tr><th>Player</th><th>Winner</th><th>P2</th><th>P3</th><th>Pole</th><th>FL</th><th>DNF</th><th>Pts</th></tr></thead><tbody>${playerRows}</tbody></table>
+      </div>
+    </div>`;
   }).join('');
-  el.innerHTML=`<div class="section-title">📋 Past Races</div>${rows}`;
+  el.innerHTML=`<div class="page-title">History</div><div class="page-sub">Past race results & scores</div>${rows}`;
 }
 
 // ── SETTINGS ──
-function renderSettingsPlayers() {
+function renderSettingsPlayers(){
   const el=document.getElementById('page-settings');
-  el.innerHTML=`<div class="section-title">👥 Players</div>
-  <div class="setup-card" style="margin:0;max-width:100%;">
-    <h2>Manage Players</h2>
-    <p>Add or edit players. Changes sync to everyone instantly.</p>
-    <div class="player-grid" id="player-edit-grid">
-      ${state.players.map((p,i)=>`<div class="player-input-row"><input type="color" value="${p.color}" id="edit-color-${i}"><input type="text" value="${p.name}" id="edit-name-${i}" placeholder="Player name"></div>`).join('')}
+  el.innerHTML=`
+  <div class="page-title">Players</div>
+  <div class="page-sub">Manage your league members</div>
+  <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 28px 24px;">
+    <div id="player-edit-grid">
+      ${state.players.map((p,i)=>`<div class="player-row"><input type="color" value="${p.color}" id="edit-color-${i}"><input type="text" value="${p.name}" id="edit-name-${i}" placeholder="Player name"></div>`).join('')}
     </div>
-    <button class="add-player-btn" onclick="addPlayerField()" style="margin-bottom:16px;">+ Add Player</button>
-    <button class="btn" onclick="savePlayers()">Save Players</button>
+    <button class="add-btn" onclick="addPlayerField()">+ Add Player</button>
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="btn btn-red" style="padding:10px 24px;" onclick="savePlayers()">Save Changes</button>
+    </div>
   </div>`;
 }
-function addPlayerField() {
-  const grid=document.getElementById('player-edit-grid');
-  const i=grid.children.length; if(i>=8) return;
-  const row=document.createElement('div'); row.className='player-input-row';
-  row.innerHTML=`<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="edit-color-${i}"><input type="text" placeholder="New player name" id="edit-name-${i}">`;
-  grid.appendChild(row);
+function addPlayerField(){
+  const g=document.getElementById('player-edit-grid'); const i=g.children.length; if(i>=8) return;
+  const r=document.createElement('div'); r.className='player-row';
+  r.innerHTML=`<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="edit-color-${i}"><input type="text" placeholder="New player name" id="edit-name-${i}">`;
+  g.appendChild(r);
 }
-async function savePlayers() {
-  const grid=document.getElementById('player-edit-grid');
-  const newPlayers=[];
-  for(let i=0;i<grid.children.length;i++){
+async function savePlayers(){
+  const g=document.getElementById('player-edit-grid'); const np=[];
+  for(let i=0;i<g.children.length;i++){
     const name=document.getElementById('edit-name-'+i)?.value.trim();
     const color=document.getElementById('edit-color-'+i)?.value||PRESET_COLORS[i];
-    if(name){const ex=state.players[i]; newPlayers.push(ex?{...ex,name,color,initials:name.slice(0,2).toUpperCase()}:{id:'p'+Date.now()+i,name,color,initials:name.slice(0,2).toUpperCase()});}
+    if(name){const ex=state.players[i]; np.push(ex?{...ex,name,color,initials:name.slice(0,2).toUpperCase()}:{id:'p'+Date.now()+i,name,color,initials:name.slice(0,2).toUpperCase()});}
   }
-  if(!newPlayers.length){showToast('Add at least one player!',true);return;}
-  state.players=newPlayers; await saveState(); showToast('Players saved! 👥');
+  if(!np.length){showToast('Add at least one player',true);return;}
+  state.players=np; await saveState(); showToast('Players saved 👥');
 }
 
 // ── TOAST ──
-function showToast(msg, isError=false) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=isError?'show error':'show';
-  setTimeout(()=>t.className='',2500);
+function showToast(msg,isError=false){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.className=isError?'show error':'show';
+  setTimeout(()=>t.className='',2600);
 }
 </script>
 </body>
