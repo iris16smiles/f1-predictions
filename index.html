@@ -388,7 +388,7 @@ DOC.onSnapshot(snap => {
   state = snap.exists ? snap.data() : { players:[], predictions:{}, ratings:{} };
   state.predictions = state.predictions||{};
   state.ratings = state.ratings||{};
-  document.getElementById('sync-dot').classList.add('live');
+  document.getElementById('sync-dot')?.classList.add('live');
   document.getElementById('setup-overlay').style.display = (snap.exists && state.players.length) ? 'none' : 'flex';
   renderPage(currentPage);
 }, () => showToast('Connection error', true));
