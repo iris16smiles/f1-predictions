@@ -300,32 +300,30 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const DOC = db.collection('league').doc('main');
 
-// ── RACES ──
+// ── RACES ── (22-race calendar: Bahrain + Saudi Arabia cancelled, Emilia Romagna removed, Madrid added)
 const RACES = [
-  {id:1,round:"R1",name:"Australian GP",country:"Australia",flag:"🇦🇺",date:"Mar 15, 2026",sprint:false},
-  {id:2,round:"R2",name:"Chinese GP",country:"China",flag:"🇨🇳",date:"Mar 22, 2026",sprint:true},
-  {id:3,round:"R3",name:"Japanese GP",country:"Japan",flag:"🇯🇵",date:"Apr 5, 2026",sprint:false},
-  {id:4,round:"R4",name:"Bahrain GP",country:"Bahrain",flag:"🇧🇭",date:"Apr 19, 2026",sprint:false},
-  {id:5,round:"R5",name:"Saudi Arabian GP",country:"Saudi Arabia",flag:"🇸🇦",date:"Apr 26, 2026",sprint:false},
-  {id:6,round:"R6",name:"Miami GP",country:"USA",flag:"🇺🇸",date:"May 3, 2026",sprint:true},
-  {id:7,round:"R7",name:"Emilia Romagna GP",country:"Italy",flag:"🇮🇹",date:"May 17, 2026",sprint:false},
-  {id:8,round:"R8",name:"Monaco GP",country:"Monaco",flag:"🇲🇨",date:"May 24, 2026",sprint:false},
-  {id:9,round:"R9",name:"Spanish GP",country:"Spain",flag:"🇪🇸",date:"Jun 1, 2026",sprint:false},
-  {id:10,round:"R10",name:"Canadian GP",country:"Canada",flag:"🇨🇦",date:"Jun 14, 2026",sprint:true},
-  {id:11,round:"R11",name:"Austrian GP",country:"Austria",flag:"🇦🇹",date:"Jun 28, 2026",sprint:false},
-  {id:12,round:"R12",name:"British GP",country:"UK",flag:"🇬🇧",date:"Jul 5, 2026",sprint:true},
-  {id:13,round:"R13",name:"Hungarian GP",country:"Hungary",flag:"🇭🇺",date:"Jul 26, 2026",sprint:false},
-  {id:14,round:"R14",name:"Belgian GP",country:"Belgium",flag:"🇧🇪",date:"Aug 2, 2026",sprint:false},
-  {id:15,round:"R15",name:"Dutch GP",country:"Netherlands",flag:"🇳🇱",date:"Aug 30, 2026",sprint:true},
-  {id:16,round:"R16",name:"Italian GP",country:"Italy",flag:"🇮🇹",date:"Sep 6, 2026",sprint:false},
-  {id:17,round:"R17",name:"Madrid GP",country:"Spain",flag:"🇪🇸",date:"Sep 20, 2026",sprint:false},
-  {id:18,round:"R18",name:"Azerbaijan GP",country:"Azerbaijan",flag:"🇦🇿",date:"Sep 27, 2026",sprint:false},
-  {id:19,round:"R19",name:"Singapore GP",country:"Singapore",flag:"🇸🇬",date:"Oct 4, 2026",sprint:true},
-  {id:20,round:"R20",name:"US GP",country:"USA",flag:"🇺🇸",date:"Oct 18, 2026",sprint:false},
-  {id:21,round:"R21",name:"Mexico City GP",country:"Mexico",flag:"🇲🇽",date:"Oct 25, 2026",sprint:false},
-  {id:22,round:"R22",name:"São Paulo GP",country:"Brazil",flag:"🇧🇷",date:"Nov 8, 2026",sprint:false},
-  {id:23,round:"R23",name:"Las Vegas GP",country:"USA",flag:"🇺🇸",date:"Nov 21, 2026",sprint:false},
-  {id:24,round:"R24",name:"Abu Dhabi GP",country:"UAE",flag:"🇦🇪",date:"Dec 6, 2026",sprint:false},
+  {id:1, round:"R1",  name:"Australian GP",  country:"Australia", flag:"🇦🇺", date:"Mar 8, 2026",  sprint:false},
+  {id:2, round:"R2",  name:"Chinese GP",     country:"China",     flag:"🇨🇳", date:"Mar 15, 2026", sprint:true},
+  {id:3, round:"R3",  name:"Japanese GP",    country:"Japan",     flag:"🇯🇵", date:"Mar 29, 2026", sprint:false},
+  {id:4, round:"R4",  name:"Miami GP",       country:"USA",       flag:"🇺🇸", date:"May 3, 2026",  sprint:true},
+  {id:5, round:"R5",  name:"Canadian GP",    country:"Canada",    flag:"🇨🇦", date:"May 24, 2026", sprint:true},
+  {id:6, round:"R6",  name:"Monaco GP",      country:"Monaco",    flag:"🇲🇨", date:"Jun 7, 2026",  sprint:false},
+  {id:7, round:"R7",  name:"Spanish GP",     country:"Spain",     flag:"🇪🇸", date:"Jun 14, 2026", sprint:false},
+  {id:8, round:"R8",  name:"Austrian GP",    country:"Austria",   flag:"🇦🇹", date:"Jun 28, 2026", sprint:false},
+  {id:9, round:"R9",  name:"British GP",     country:"UK",        flag:"🇬🇧", date:"Jul 5, 2026",  sprint:true},
+  {id:10,round:"R10", name:"Belgian GP",     country:"Belgium",   flag:"🇧🇪", date:"Jul 19, 2026", sprint:false},
+  {id:11,round:"R11", name:"Hungarian GP",   country:"Hungary",   flag:"🇭🇺", date:"Jul 26, 2026", sprint:false},
+  {id:12,round:"R12", name:"Dutch GP",       country:"Netherlands",flag:"🇳🇱",date:"Aug 23, 2026", sprint:true},
+  {id:13,round:"R13", name:"Italian GP",     country:"Italy",     flag:"🇮🇹", date:"Sep 6, 2026",  sprint:false},
+  {id:14,round:"R14", name:"Madrid GP",      country:"Spain",     flag:"🇪🇸", date:"Sep 13, 2026", sprint:false},
+  {id:15,round:"R15", name:"Azerbaijan GP",  country:"Azerbaijan",flag:"🇦🇿", date:"Sep 27, 2026", sprint:false},
+  {id:16,round:"R16", name:"Singapore GP",   country:"Singapore", flag:"🇸🇬", date:"Oct 11, 2026", sprint:true},
+  {id:17,round:"R17", name:"US GP",          country:"USA",       flag:"🇺🇸", date:"Oct 25, 2026", sprint:false},
+  {id:18,round:"R18", name:"Mexico City GP", country:"Mexico",    flag:"🇲🇽", date:"Nov 1, 2026",  sprint:false},
+  {id:19,round:"R19", name:"São Paulo GP",   country:"Brazil",    flag:"🇧🇷", date:"Nov 8, 2026",  sprint:false},
+  {id:20,round:"R20", name:"Las Vegas GP",   country:"USA",       flag:"🇺🇸", date:"Nov 21, 2026", sprint:false},
+  {id:21,round:"R21", name:"Qatar GP",       country:"Qatar",     flag:"🇶🇦", date:"Nov 29, 2026", sprint:false},
+  {id:22,round:"R22", name:"Abu Dhabi GP",   country:"UAE",       flag:"🇦🇪", date:"Dec 6, 2026",  sprint:false},
 ];
 
 const PRESET_COLORS = ['#e10600','#30d158','#0071e3','#ff9f0a','#bf5af2','#ff375f','#5ac8fa','#34c759'];
@@ -491,7 +489,7 @@ function renderCalendar() {
     </div>`;
   }
 
-  let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} races coming up</div>`;
+  let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
   html += renderStandings();
   if(upcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${upcoming.map(raceCard).join('')}</div>`;
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
