@@ -137,6 +137,23 @@
     .lb-card.p1 { background: linear-gradient(135deg,#fffbe6,#fff8d0); }
     .lb-card.p2 { background: linear-gradient(135deg,#f4f4f4,#ececec); }
     .lb-card.p3 { background: linear-gradient(135deg,#fff4ec,#ffede0); }
+    .standings-strip { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; margin-bottom: 28px; }
+    .standings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .standings-title { font-size: 0.78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
+    .standings-rows { display: flex; flex-direction: column; gap: 8px; }
+    .standings-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; transition: background .15s; }
+    .standings-row:hover { background: var(--surface2); }
+    .standings-row.rank-1 { background: linear-gradient(90deg,rgba(255,214,0,.12),transparent); }
+    .standings-row.rank-2 { background: linear-gradient(90deg,rgba(180,180,180,.1),transparent); }
+    .standings-row.rank-3 { background: linear-gradient(90deg,rgba(210,140,80,.1),transparent); }
+    .standings-rank { font-size: 0.82rem; font-weight: 700; color: var(--text3); width: 20px; text-align: center; flex-shrink: 0; }
+    .standings-rank.gold { color: #c9920a; }
+    .standings-rank.silver { color: #888; }
+    .standings-rank.bronze { color: #a0622a; }
+    .standings-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .standings-name { font-size: 0.9rem; font-weight: 600; flex: 1; color: var(--text); }
+    .standings-pts { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .standings-pts-label { font-size: 0.72rem; color: var(--text3); margin-left: 2px; }
     .lb-rank { font-size: 1.3rem; font-weight: 800; width: 28px; text-align: center; color: var(--text3); }
     .p1 .lb-rank { color: #b8860b; } .p2 .lb-rank { color: #888; } .p3 .lb-rank { color: #a0522d; }
     .lb-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0; }
@@ -196,8 +213,7 @@
 <header>
   <div class="logo">🏎️ F1 Predictions League <div class="sync-dot" id="sync-dot"></div></div>
   <nav>
-    <button class="active" onclick="showPage('calendar',this)">Calendar</button>
-    <button onclick="showPage('leaderboard',this)">Leaderboard</button>
+    <button class="active" onclick="showPage('calendar',this)">Home</button>
     <button onclick="showPage('history',this)">History</button>
     <button onclick="showPage('settings',this)">Players</button>
   </nav>
@@ -344,7 +360,6 @@ function showPage(name, btn) {
 }
 function renderPage(n) {
   if(n==='calendar') renderCalendar();
-  if(n==='leaderboard') renderLeaderboard();
   if(n==='history') renderHistory();
   if(n==='settings') renderSettingsPlayers();
 }
@@ -370,6 +385,32 @@ async function setupDone() {
   state={players, predictions:{}, ratings:{}}; await saveState();
   document.getElementById('setup-overlay').style.display='none';
   showToast('Welcome to the league! 🏁');
+}
+
+// ── STANDINGS STRIP ──
+function renderStandings() {
+  if (!state.players.length) return '';
+  const ranked = state.players.map(p => ({...p, ...calcPlayerPoints(p.id)})).sort((a,b) => b.total - a.total);
+  const rankClass = ['rank-1','rank-2','rank-3'];
+  const rankIcon = ['🥇','🥈','🥉'];
+  const rankColor = ['gold','silver','bronze'];
+  const rows = ranked.map((p, i) => `
+    <div class="standings-row ${rankClass[i]||''}">
+      <div class="standings-rank ${rankColor[i]||''}">${rankIcon[i] || i+1}</div>
+      <div class="standings-avatar" style="background:${p.color}">${p.initials}</div>
+      <div class="standings-name">${p.name}</div>
+      <div>
+        <span class="standings-pts">${p.total}</span>
+        <span class="standings-pts-label">pt${p.total!==1?'s':''}</span>
+      </div>
+    </div>`).join('');
+  return `<div class="standings-strip">
+    <div class="standings-header">
+      <span class="standings-title">🏆 Standings</span>
+      <span style="font-size:.75rem;color:var(--text3)">1 pt per correct prediction</span>
+    </div>
+    <div class="standings-rows">${rows}</div>
+  </div>`;
 }
 
 // ── CALENDAR ──
@@ -451,6 +492,7 @@ function renderCalendar() {
   }
 
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} races coming up</div>`;
+  html += renderStandings();
   if(upcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${upcoming.map(raceCard).join('')}</div>`;
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
