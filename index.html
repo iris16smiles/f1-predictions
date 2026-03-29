@@ -668,10 +668,10 @@ function renderCalendar() {
   const restUpcoming = upcoming.slice(1); // exclude next race from the list (shown in hero)
 
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
-  html += renderNextRace(upcoming);
   html += renderLeaderboard();
-  if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
+  html += renderNextRace(upcoming);
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
+  if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
 }
 
