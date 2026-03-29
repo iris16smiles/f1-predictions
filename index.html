@@ -154,6 +154,59 @@
     .standings-name { font-size: 0.9rem; font-weight: 600; flex: 1; color: var(--text); }
     .standings-pts { font-size: 0.9rem; font-weight: 700; color: var(--text); }
     .standings-pts-label { font-size: 0.72rem; color: var(--text3); margin-left: 2px; }
+
+    /* ── NEXT RACE HERO ── */
+    .next-race-hero { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 12px; position: relative; }
+    .next-race-hero-inner { padding: 22px 24px 20px; }
+    .next-race-hero-label { font-size: 0.72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+    .next-race-hero-label.today { color: #e10600; }
+    .next-race-hero-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+    .next-race-hero-flag { font-size: 2.6rem; line-height: 1; flex-shrink: 0; }
+    .next-race-hero-info { flex: 1; }
+    .next-race-hero-name { font-size: 1.3rem; font-weight: 700; color: var(--text); line-height: 1.2; margin-bottom: 4px; }
+    .next-race-hero-meta { font-size: 0.82rem; color: var(--text2); }
+    .next-race-countdown { display: inline-flex; align-items: center; gap: 6px; background: rgba(225,6,0,.07); color: #c00; border-radius: 980px; padding: 4px 12px; font-size: 0.8rem; font-weight: 700; margin-top: 6px; }
+    .next-race-countdown.today-pill { background: rgba(225,6,0,.1); color: #e10600; }
+    .next-race-countdown.soon-pill { background: rgba(255,159,10,.1); color: #a06000; }
+    .next-race-countdown.far-pill { background: var(--surface2); color: var(--text2); }
+    .hero-pred-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .hero-pred-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: #fff; flex-shrink: 0; position: relative; }
+    .hero-pred-avatar.done::after { content:'✓'; position: absolute; bottom:-3px; right:-3px; background: var(--green); color:#fff; width:13px; height:13px; border-radius:50%; font-size:.5rem; display:flex; align-items:center; justify-content:center; border: 1.5px solid var(--surface); }
+    .hero-pred-avatar.missing { opacity: 0.35; }
+    .hero-pred-label { font-size: 0.78rem; color: var(--text2); }
+    .hero-cta-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn-hero { background: var(--text); color: var(--surface); padding: 10px 22px; font-size: 0.9rem; font-weight: 600; border-radius: 980px; border: none; cursor: pointer; font-family: inherit; transition: opacity .15s; white-space: nowrap; }
+    .btn-hero:hover { opacity: .85; }
+    .btn-hero-red { background: #e10600; color: #fff; }
+    .hero-accent-bar { height: 3px; background: linear-gradient(90deg,#e10600,#ff6b35,#ff9f0a); }
+
+    /* ── SEASON SUMMARY ── */
+    .season-summary { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 22px; margin-bottom: 12px; }
+    .season-summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .season-summary-title { font-size: 0.78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); }
+    .season-summary-sub { font-size: 0.75rem; color: var(--text3); }
+    .player-stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .player-stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .player-stat-row:first-child { padding-top: 0; }
+    .stat-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .stat-info { flex: 1; min-width: 0; }
+    .stat-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+    .stat-trend { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+    .stat-form { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
+    .form-pip { width: 22px; height: 6px; border-radius: 3px; }
+    .form-pip.fp-3 { background: #30d158; }
+    .form-pip.fp-2 { background: #a8e6bc; }
+    .form-pip.fp-1 { background: #ffd060; }
+    .form-pip.fp-0 { background: #e0e0e5; }
+    .form-pip.fp-none { background: var(--border); opacity: .5; }
+    .stat-right { text-align: right; flex-shrink: 0; }
+    .stat-pts { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+    .stat-accuracy { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
+    .trend-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.68rem; border-radius: 980px; padding: 2px 8px; font-weight: 600; white-space: nowrap; }
+    .tb-fire { background: rgba(255,100,0,.1); color: #d04000; }
+    .tb-sharp { background: rgba(48,209,88,.1); color: #1a7a3a; }
+    .tb-unlucky { background: rgba(0,113,227,.1); color: #0055b3; }
+    .tb-blank { background: var(--surface2); color: var(--text3); }
     .lb-rank { font-size: 1.3rem; font-weight: 800; width: 28px; text-align: center; color: var(--text3); }
     .p1 .lb-rank { color: #b8860b; } .p2 .lb-rank { color: #888; } .p3 .lb-rank { color: #a0522d; }
     .lb-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: #fff; flex-shrink: 0; }
@@ -385,6 +438,165 @@ async function setupDone() {
   showToast('Welcome to the league! 🏁');
 }
 
+// ── NEXT RACE HERO ──
+function renderNextRace(upcoming) {
+  if (!upcoming.length) return '';
+  const race = upcoming[0];
+  const today = new Date();
+  const raceDate = new Date(race.date);
+  const diffMs = raceDate - today;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  let countdownPill, labelText;
+  if (diffDays <= 0) {
+    countdownPill = `<span class="next-race-countdown today-pill">🚨 Race day today!</span>`;
+    labelText = `<div class="next-race-hero-label today">▶ Race happening now</div>`;
+  } else if (diffDays === 1) {
+    countdownPill = `<span class="next-race-countdown today-pill">🚨 Tomorrow!</span>`;
+    labelText = `<div class="next-race-hero-label today">▶ Next race — tomorrow</div>`;
+  } else if (diffDays <= 7) {
+    countdownPill = `<span class="next-race-countdown soon-pill">⏱ ${diffDays} days away</span>`;
+    labelText = `<div class="next-race-hero-label">▶ Next race — this week</div>`;
+  } else {
+    countdownPill = `<span class="next-race-countdown far-pill">📅 ${diffDays} days away</span>`;
+    labelText = `<div class="next-race-hero-label">▶ Next up</div>`;
+  }
+
+  const summaries = playerPredSummary(race.id);
+  const predicted = summaries.filter(s => s.hasPreds);
+  const missing = summaries.filter(s => !s.hasPreds);
+
+  const avatarRow = state.players.length
+    ? `<div class="hero-pred-row">
+        ${summaries.map(s => `<div class="hero-pred-avatar ${s.hasPreds?'done':'missing'}" style="background:${s.player.color}" title="${s.player.name}">${s.player.initials}</div>`).join('')}
+        <span class="hero-pred-label">
+          ${predicted.length === summaries.length
+            ? 'Everyone has predicted ✓'
+            : missing.length === summaries.length
+              ? 'No predictions yet'
+              : `${predicted.map(s=>s.player.name).join(', ')} predicted · ${missing.map(s=>s.player.name).join(', ')} still to go`}
+        </span>
+      </div>`
+    : '';
+
+  const ctaLabel = predicted.length === summaries.length && summaries.length > 0
+    ? '✏️ Edit Predictions'
+    : '✏️ Add Your Predictions';
+
+  return `<div class="next-race-hero">
+    <div class="hero-accent-bar"></div>
+    <div class="next-race-hero-inner">
+      ${labelText}
+      <div class="next-race-hero-top">
+        <div class="next-race-hero-flag">${race.flag}</div>
+        <div class="next-race-hero-info">
+          <div class="next-race-hero-name">${race.name}</div>
+          <div class="next-race-hero-meta">${race.date} · ${race.country}${race.sprint ? ' · <strong>Sprint</strong>' : ''}</div>
+          ${countdownPill}
+        </div>
+      </div>
+      ${avatarRow}
+      <div class="hero-cta-row">
+        <button class="btn btn-hero ${diffDays <= 1 ? 'btn-hero-red' : ''}" onclick="openPredModal(${race.id}, event)">
+          ${ctaLabel}
+        </button>
+        ${race.sprint ? '<span style="font-size:.78rem;color:var(--text3)">Sprint weekend — predictions close earlier</span>' : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── SEASON SUMMARY ──
+function renderSeasonSummary() {
+  if (!state.players.length) return '';
+  const ratedRaces = RACES.filter(r => {
+    const rr = state.ratings[r.id];
+    return rr && Object.keys(rr).length > 0;
+  });
+  if (!ratedRaces.length) return '';
+
+  const playerStats = state.players.map(p => {
+    // Points per race
+    const raceScores = ratedRaces.map(race => {
+      const rating = state.ratings[race.id]?.[p.id];
+      if (!rating) return null;
+      return [rating.p1, rating.p2, rating.p3].filter(v => v === true).length;
+    }).filter(v => v !== null);
+
+    const total = raceScores.reduce((a,b) => a+b, 0);
+    const totalRated = raceScores.length;
+    const totalPreds = ratedRaces.reduce((acc, race) => {
+      const pred = state.predictions[race.id]?.[p.id];
+      return acc + [pred?.p1, pred?.p2, pred?.p3].filter(Boolean).length;
+    }, 0);
+    const correct = total;
+    const accuracy = totalPreds > 0 ? Math.round((correct / totalPreds) * 100) : 0;
+
+    // Form: last 3 races
+    const recentScores = raceScores.slice(-3);
+    // Pad to 3 with nulls if fewer races rated
+    while (recentScores.length < 3) recentScores.unshift(null);
+    const formHtml = recentScores.map(s => {
+      if (s === null) return `<div class="form-pip fp-none" title="Not yet"></div>`;
+      return `<div class="form-pip fp-${s}" title="${s} pts"></div>`;
+    }).join('');
+
+    // Trend badge
+    let trendBadge = '';
+    const streak = (() => {
+      let s = 0;
+      for (let i = raceScores.length - 1; i >= 0; i--) {
+        if (raceScores[i] > 0) s++; else break;
+      }
+      return s;
+    })();
+    if (streak >= 2) {
+      trendBadge = `<span class="trend-badge tb-fire">🔥 ${streak}-race streak</span>`;
+    } else if (accuracy >= 67 && totalPreds >= 3) {
+      trendBadge = `<span class="trend-badge tb-sharp">🎯 ${accuracy}% accuracy</span>`;
+    } else if (total === 0 && totalRated >= 2) {
+      trendBadge = `<span class="trend-badge tb-unlucky">😬 Waiting for a win</span>`;
+    } else if (totalRated > 0) {
+      const lastTwo = raceScores.slice(-2);
+      if (lastTwo.length === 2 && lastTwo[1] > lastTwo[0]) {
+        trendBadge = `<span class="trend-badge tb-sharp">📈 Improving</span>`;
+      }
+    }
+
+    // Sub-line
+    const subLine = totalRated > 0
+      ? `${correct}/${totalPreds} correct · ${accuracy}%`
+      : 'No rated races yet';
+
+    return { p, total, totalRated, totalPreds, correct, accuracy, formHtml, trendBadge, subLine };
+  }).sort((a,b) => b.total - a.total);
+
+  const rows = playerStats.map(({p, total, formHtml, trendBadge, subLine}) => `
+    <div class="player-stat-row">
+      <div class="stat-avatar" style="background:${p.color}">${p.initials}</div>
+      <div class="stat-info">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="stat-name">${p.name}</span>
+          ${trendBadge}
+        </div>
+        <div class="stat-trend">${subLine}</div>
+        <div class="stat-form">${formHtml}<span style="font-size:.68rem;color:var(--text3);margin-left:4px">last ${ratedRaces.slice(-3).map(r=>r.round).join(' · ')}</span></div>
+      </div>
+      <div class="stat-right">
+        <div class="stat-pts">${total}</div>
+        <div class="stat-accuracy">pts</div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="season-summary">
+    <div class="season-summary-header">
+      <span class="season-summary-title">📊 Season so far</span>
+      <span class="season-summary-sub">${ratedRaces.length} race${ratedRaces.length!==1?'s':''} rated</span>
+    </div>
+    <div class="season-summary-rows">${rows}</div>
+  </div>`;
+}
+
 // ── STANDINGS STRIP ──
 function renderStandings() {
   if (!state.players.length) return '';
@@ -489,9 +701,14 @@ function renderCalendar() {
     </div>`;
   }
 
+  const nextRace = upcoming[0];
+  const restUpcoming = upcoming.slice(1); // exclude next race from the list (shown in hero)
+
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
+  html += renderNextRace(upcoming);
+  html += renderSeasonSummary();
   html += renderStandings();
-  if(upcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${upcoming.map(raceCard).join('')}</div>`;
+  if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${past.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
 }
