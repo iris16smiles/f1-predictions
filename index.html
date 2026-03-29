@@ -178,6 +178,15 @@
     #toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(29,29,31,.9); backdrop-filter: blur(10px); color: #fff; padding: 11px 20px; border-radius: 980px; font-weight: 500; font-size: 0.88rem; z-index: 999; opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background: rgba(225,6,0,.9); }
+    .auto-reason { font-size: 0.73rem; color: var(--text3); margin-top: 4px; line-height: 1.4; font-style: italic; }
+    .auto-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.68rem; background: rgba(99,102,241,.12); color: #4f46e5; border-radius: 980px; padding: 2px 7px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+    .auto-rating-bar { background: linear-gradient(135deg,rgba(99,102,241,.07),rgba(99,102,241,.03)); border: 1px solid rgba(99,102,241,.15); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .auto-rating-bar p { font-size: 0.82rem; color: var(--text2); flex: 1; margin: 0; min-width: 160px; }
+    .btn-approve { background: rgba(99,102,241,1); color: #fff; padding: 7px 16px; font-size: 0.82rem; border-radius: 980px; border: none; cursor: pointer; font-family: inherit; font-weight: 600; white-space: nowrap; }
+    .btn-approve:hover { background: #4338ca; }
+    .auto-fetching { text-align: center; padding: 24px; color: var(--text2); font-size: .88rem; }
+    .auto-fetching .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 600px) { main { padding: 24px 16px 80px; } .page-title { font-size: 1.6rem; } nav button { padding: 6px 10px; font-size: 0.8rem; } }
   </style>
@@ -236,8 +245,9 @@
     </div>
     <div class="modal-divider"></div>
     <div class="modal-body" id="rate-modal-body"></div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
       <button class="btn btn-ghost" onclick="closeRateModal()">Cancel</button>
+      <button class="btn" id="auto-rate-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:8px 16px;font-size:.85rem;" onclick="triggerAutoRate()">✨ Auto-rate</button>
       <button class="btn btn-green" id="save-rating-btn" onclick="saveRatings()">Save Ratings</button>
     </div>
   </div>
@@ -511,6 +521,266 @@ async function savePredictions() {
 
 function closePredModal() { document.getElementById('predict-modal').classList.remove('open'); }
 
+// ── AUTO-RATING ENGINE ──
+
+// 2026 F1 driver aliases (family name → array of tokens that match them)
+const DRIVER_ALIASES = {
+  'verstappen':  ['verstappen','ver','max verstappen','max'],
+  'hamilton':    ['hamilton','lewis','ham','lewis hamilton'],
+  'leclerc':     ['leclerc','charles','charl','lec','charles leclerc'],
+  'norris':      ['norris','lando','nor','lando norris'],
+  'piastri':     ['piastri','oscar','pia','oscar piastri'],
+  'russell':     ['russell','russel','george','rus','george russell'],
+  'antonelli':   ['antonelli','kimi','ant','andrea','kimi antonelli','andrea kimi'],
+  'alonso':      ['alonso','fernando','alo'],
+  'sainz':       ['sainz','carlos','sai'],
+  'bortoleto':   ['bortoleto','borteleto','gabriel','bor','gabriel bortoleto'],
+  'hulkenberg':  ['hulkenberg','hulk','nico','hul'],
+  'ocon':        ['ocon','esteban','oco'],
+  'gasly':       ['gasly','pierre','gas'],
+  'albon':       ['albon','alex','alb'],
+  'colapinto':   ['colapinto','franco','col'],
+  'tsunoda':     ['tsunoda','yuki','tsu'],
+  'lawson':      ['lawson','liam','law'],
+  'bearman':     ['bearman','ollie','oli','bea'],
+  'doohan':      ['doohan','jack','doo'],
+  'hadjar':      ['hadjar','isack','had'],
+};
+
+const TEAM_ALIASES = {
+  'mclaren':  ['mclaren','mcl'],
+  'ferrari':  ['ferrari','fer','scuderia'],
+  'mercedes': ['mercedes','merc'],
+  'red bull': ['red bull','redbull','rbr','rb20'],
+  'alpine':   ['alpine','alp'],
+  'williams': ['williams','wil'],
+  'aston martin': ['aston','aston martin','ast'],
+  'sauber':   ['sauber','kick','sau'],
+  'haas':     ['haas'],
+  'rb':       ['visa rb','racing bulls','vcarb','rb'],
+};
+
+function normalise(s) {
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+
+function findDriverInText(text) {
+  const t = normalise(text);
+  for (const [family, aliases] of Object.entries(DRIVER_ALIASES)) {
+    for (const alias of aliases) {
+      // word-boundary check: alias surrounded by non-alpha chars
+      const re = new RegExp('(?<![a-z])' + alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?![a-z])', 'i');
+      if (re.test(t)) return family;
+    }
+  }
+  return null;
+}
+
+function findTeamInText(text) {
+  const t = normalise(text);
+  for (const [team, aliases] of Object.entries(TEAM_ALIASES)) {
+    for (const alias of aliases) {
+      if (t.includes(alias)) return team;
+    }
+  }
+  return null;
+}
+
+function driverMatchesResult(r, familyName) {
+  const fn = normalise(r.Driver?.familyName || '');
+  const gn = normalise(r.Driver?.givenName || '');
+  return fn === familyName || (gn + ' ' + fn).includes(familyName);
+}
+
+function teamMatchesResult(r, teamKey) {
+  const cn = normalise(r.Constructor?.name || '');
+  return cn.includes(normalise(teamKey)) || TEAM_ALIASES[teamKey]?.some(a => cn.includes(a));
+}
+
+function isDNF(r) {
+  // Classified finishers have "Finished" or "+N Laps"
+  const s = r.status || '';
+  return s !== 'Finished' && !s.match(/\+\d+ lap/i);
+}
+
+function matchPrediction(text, results, qualifying) {
+  const t = normalise(text);
+  const driver = findDriverInText(t);
+  const team = findTeamInText(t);
+
+  // ── WIN ──
+  if (/\bwin(s|ner)?\b|1st place|first place|\bp1\b/.test(t)) {
+    const winner = results[0];
+    if (driver) {
+      const correct = driverMatchesResult(winner, driver);
+      const winnerName = winner?.Driver?.givenName + ' ' + winner?.Driver?.familyName;
+      return { value: correct, reason: correct ? `${winnerName} won ✓` : `${winnerName} won, not ${driver}` };
+    }
+    if (team) {
+      const correct = teamMatchesResult(winner, team);
+      return { value: correct, reason: correct ? `${winner.Constructor?.name} won ✓` : `Winner was ${winner.Constructor?.name}` };
+    }
+  }
+
+  // ── PODIUM (P1-P3) ──
+  if (/\bpodium\b|top.?3\b/.test(t)) {
+    const top3 = results.slice(0, 3);
+    if (driver) {
+      const r = top3.find(x => driverMatchesResult(x, driver));
+      const names = top3.map(x=>x.Driver?.familyName).join(', ');
+      return { value: !!r, reason: r ? `${r.Driver?.familyName} was P${r.position} ✓` : `Podium: ${names}` };
+    }
+    if (team) {
+      const r = top3.find(x => teamMatchesResult(x, team));
+      const names = top3.map(x=>x.Driver?.familyName).join(', ');
+      return { value: !!r, reason: r ? `${r.Driver?.familyName} (${r.Constructor?.name}) was P${r.position} ✓` : `Podium: ${names} — no ${team}` };
+    }
+  }
+
+  // ── POINTS (P1-P10) ──
+  if (/\bpoints\b/.test(t) && !/no points|without points|zero points/.test(t)) {
+    const top10 = results.slice(0, 10);
+    if (driver) {
+      const r = top10.find(x => driverMatchesResult(x, driver));
+      return { value: !!r, reason: r ? `${r.Driver?.familyName} finished P${r.position} ✓` : `${driver} finished outside points` };
+    }
+  }
+
+  // ── NO POINTS (P11+) ──
+  if (/no points|outside points|didn.t score/.test(t)) {
+    if (driver) {
+      const r = results.find(x => driverMatchesResult(x, driver));
+      const pos = r ? parseInt(r.position) : null;
+      if (pos) return { value: pos > 10, reason: `${r.Driver?.familyName} finished P${pos}` };
+    }
+  }
+
+  // ── DNF (single driver) ──
+  if (/\bdnf\b|did not finish|retire[ds]?\b/.test(t) && !/\d+\s*dnf/.test(t)) {
+    if (driver) {
+      const r = results.find(x => driverMatchesResult(x, driver));
+      if (r) {
+        const dnf = isDNF(r);
+        return { value: dnf, reason: dnf ? `${r.Driver?.familyName} retired (${r.status}) ✓` : `${r.Driver?.familyName} finished P${r.position}` };
+      }
+    }
+  }
+
+  // ── N DNFs ──
+  const dnfCountMatch = t.match(/(\d+)\s*(?:or more\s*)?dnf/);
+  if (dnfCountMatch) {
+    const n = parseInt(dnfCountMatch[1]);
+    const dnfList = results.filter(isDNF);
+    const count = dnfList.length;
+    const orMore = /or more|at least|\+/.test(t);
+    const correct = orMore ? count >= n : count === n;
+    return { value: correct, reason: `There were ${count} DNF${count!==1?'s':''} in this race` };
+  }
+
+  // ── P{N} or below/above ──
+  const posBelow = t.match(/p(\d+)\s*or\s*(below|lower|worse|higher|above|better)/);
+  if (posBelow) {
+    const n = parseInt(posBelow[1]);
+    const direction = posBelow[2];
+    if (driver) {
+      const r = results.find(x => driverMatchesResult(x, driver));
+      const pos = r ? parseInt(r.position) : null;
+      if (pos) {
+        const below = /below|lower|worse/.test(direction);
+        const correct = below ? pos >= n : pos <= n;
+        return { value: correct, reason: `${r.Driver?.familyName} finished P${pos}` };
+      }
+    }
+  }
+
+  // ── Exact position P{N} ──
+  const exactPos = t.match(/\bp(\d+)\b/);
+  if (exactPos && driver) {
+    const n = parseInt(exactPos[1]);
+    const r = results.find(x => driverMatchesResult(x, driver));
+    const pos = r ? parseInt(r.position) : null;
+    if (pos) return { value: pos === n, reason: `${r.Driver?.familyName} finished P${pos}` };
+  }
+
+  // ── "at least 1 non X/Y in top N" ──
+  const nonTeamMatch = t.match(/(?:at least\s*\d+\s*)?non[\s-](\w[\w\s]*?)(?:\s*[\/,]\s*(\w[\w\s]*?))?\s*in top\s*(\d+)/);
+  if (nonTeamMatch) {
+    const excludeTeams = [nonTeamMatch[1], nonTeamMatch[2]].filter(Boolean).map(x=>x.trim().toLowerCase());
+    const topN = parseInt(nonTeamMatch[3]);
+    const topResults = results.slice(0, topN);
+    const hasNonExcluded = topResults.some(r => {
+      const cn = normalise(r.Constructor?.name || '');
+      return !excludeTeams.some(et => cn.includes(et) || (TEAM_ALIASES[et]||[]).some(a=>cn.includes(a)));
+    });
+    const nonExcludedDrivers = topResults.filter(r => {
+      const cn = normalise(r.Constructor?.name||'');
+      return !excludeTeams.some(et => cn.includes(et) || (TEAM_ALIASES[et]||[]).some(a=>cn.includes(a)));
+    }).map(r=>r.Driver?.familyName).join(', ');
+    return { value: hasNonExcluded, reason: hasNonExcluded ? `Non-${excludeTeams.join('/')} in top ${topN}: ${nonExcludedDrivers}` : `Top ${topN} was all ${excludeTeams.join('/')}` };
+  }
+
+  // ── Safety car / pit stops — can't verify from results API ──
+  if (/safety car|sc deploy|vsc/.test(t)) {
+    return { value: null, reason: "Safety car data not available via API — please rate manually" };
+  }
+  if (/\bstop\b.*top|\bpit\b/.test(t)) {
+    return { value: null, reason: "Pit stop strategy data not available via API — please rate manually" };
+  }
+
+  return { value: null, reason: "Couldn't automatically determine — please rate manually" };
+}
+
+let autoRateSuggestions = {}; // { playerId: { p1: {value, reason}, p2:..., p3:... } }
+
+async function triggerAutoRate() {
+  const btn = document.getElementById('auto-rate-btn');
+  btn.disabled = true; btn.textContent = '⏳ Fetching results…';
+  const body = document.getElementById('rate-modal-body');
+  body.innerHTML = `<div class="auto-fetching"><div class="spinner"></div><br>Fetching race results & analysing predictions…</div>`;
+
+  try {
+    const race = RACES.find(r => r.id === currentRateRaceId);
+    // Fetch race results
+    const res = await fetch(`https://api.jolpi.ca/ergast/f1/2026/${race.id}/results.json`);
+    const json = await res.json();
+    const results = json?.MRData?.RaceTable?.Races?.[0]?.Results || [];
+
+    if (!results.length) {
+      showToast('No results found yet for this race', true);
+      btn.disabled = false; btn.textContent = '✨ Auto-rate';
+      renderRateBody();
+      return;
+    }
+
+    autoRateSuggestions = {};
+    state.players.forEach(p => {
+      const pred = state.predictions[currentRateRaceId]?.[p.id] || {};
+      autoRateSuggestions[p.id] = {};
+      ['p1','p2','p3'].forEach(key => {
+        const text = pred[key];
+        if (!text) { autoRateSuggestions[p.id][key] = null; return; }
+        autoRateSuggestions[p.id][key] = matchPrediction(text, results, null);
+      });
+      // Pre-fill tempRatings with suggestions (only non-null)
+      if (!tempRatings[p.id]) tempRatings[p.id] = {...(state.ratings[currentRateRaceId]?.[p.id]||{})};
+      ['p1','p2','p3'].forEach(key => {
+        const suggestion = autoRateSuggestions[p.id][key];
+        if (suggestion && suggestion.value !== null) {
+          tempRatings[p.id][key] = suggestion.value;
+        }
+      });
+    });
+
+    btn.disabled = false; btn.textContent = '✨ Auto-rate';
+    renderRateBody();
+    showToast('Auto-rating complete — review & save ✨');
+  } catch(err) {
+    btn.disabled = false; btn.textContent = '✨ Auto-rate';
+    renderRateBody();
+    showToast('Could not fetch results — try again later', true);
+  }
+}
+
 // ── RATE MODAL ──
 let currentRateRaceId = null;
 let tempRatings = {}; // { playerId: { p1: true/false/null, p2:..., p3:... } }
@@ -519,6 +789,7 @@ function openRateModal(raceId, e) {
   if(e) e.stopPropagation();
   currentRateRaceId = raceId;
   tempRatings = {};
+  autoRateSuggestions = {}; // reset suggestions on new open
   const race = RACES.find(r=>r.id===raceId);
   document.getElementById('rate-modal-title').textContent = race.flag + ' ' + race.name;
   renderRateBody();
@@ -528,6 +799,29 @@ function openRateModal(raceId, e) {
 function renderRateBody() {
   const raceId = currentRateRaceId;
   const body = document.getElementById('rate-modal-body');
+  const hasSuggestions = Object.keys(autoRateSuggestions).length > 0;
+
+  // Count how many suggestions were determined vs unknown
+  let determined = 0, total = 0;
+  if (hasSuggestions) {
+    state.players.forEach(p => {
+      const pred = state.predictions[raceId]?.[p.id] || {};
+      ['p1','p2','p3'].forEach(key => {
+        if (pred[key]) {
+          total++;
+          if (autoRateSuggestions[p.id]?.[key]?.value !== null && autoRateSuggestions[p.id]?.[key] !== null) determined++;
+        }
+      });
+    });
+  }
+
+  const banner = hasSuggestions
+    ? `<div class="auto-rating-bar">
+        <div style="font-size:1.2rem">✨</div>
+        <p>Auto-rated <strong>${determined} of ${total}</strong> predictions. Review each one and change if needed, then save.</p>
+      </div>`
+    : '';
+
   const sections = state.players.map(p => {
     const pred = state.predictions[raceId]?.[p.id] || {};
     const savedRating = state.ratings[raceId]?.[p.id] || {};
@@ -540,8 +834,16 @@ function renderRateBody() {
       const correctActive = val===true ? 'correct-active' : '';
       const wrongActive = val===false ? 'wrong-active' : '';
       if(!text) return `<div class="no-pred-note">No prediction entered</div>`;
+
+      const suggestion = autoRateSuggestions[p.id]?.[key];
+      const isAutoSet = hasSuggestions && suggestion && suggestion.value !== null;
+      const reasonHtml = suggestion?.reason
+        ? `<div class="auto-reason">🤖 ${suggestion.reason}</div>`
+        : '';
+      const autoBadge = isAutoSet ? `<span class="auto-badge">✨ AI</span>` : '';
+
       return `<div class="rating-row">
-        <div class="rating-text">${text}</div>
+        <div class="rating-text" style="flex:1">${text}${autoBadge}${reasonHtml}</div>
         <div class="rating-toggle">
           <button class="rating-btn ${correctActive}" onclick="setRating('${p.id}','${key}',true)">✅</button>
           <button class="rating-btn ${wrongActive}" onclick="setRating('${p.id}','${key}',false)">❌</button>
@@ -558,7 +860,7 @@ function renderRateBody() {
     </div>`;
   }).join('');
 
-  body.innerHTML = sections || '<div class="empty"><p>No predictions to rate yet.</p></div>';
+  body.innerHTML = banner + (sections || '<div class="empty"><p>No predictions to rate yet.</p></div>');
 }
 
 function setRating(playerId, key, value) {
