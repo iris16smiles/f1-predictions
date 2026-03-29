@@ -612,7 +612,7 @@ function renderCalendar() {
     if(isUpcoming) {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="openPredModal(${race.id},event)">✏️ Predict</button>`;
     } else if(anyPred) {
-      actionBtn = `<button class="btn btn-orange btn-sm" onclick="openRateModal(${race.id},event)">⭐ Rate</button>`;
+      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`;
     }
 
     // Predictions strip — show for ALL races that have any predictions
