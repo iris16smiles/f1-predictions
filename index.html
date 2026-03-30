@@ -1172,84 +1172,70 @@ function calcPlayerPoints(playerId) {
 function renderHistory() {
   const el = document.getElementById('page-history');
   const today = new Date();
-  const keys = ['p1','p2','p3'];
-
-  // Group races into upcoming and past
   const upcoming = RACES.filter(r => new Date(r.date) >= today);
-  const past = RACES.filter(r => new Date(r.date) < today);
 
-  function raceBlock(race) {
-    const isPast = new Date(race.date) < today;
-    const hasPreds = state.players.some(p => {
-      const pred = state.predictions[race.id]?.[p.id] || {};
-      return pred.p1 || pred.p2 || pred.p3;
-    });
-    const isRated = state.ratings[race.id] && Object.keys(state.ratings[race.id]).length;
+  function raceCard(race) {
+    const isUpcoming = new Date(race.date) >= today;
+    const summaries = playerPredSummary(race.id);
+    const anyPred = summaries.some(s => s.hasPreds);
+    const allRated = summaries.every(s => !s.hasPreds || [s.rating.p1, s.rating.p2, s.rating.p3].some(r => r !== undefined && r !== null));
 
-    // Status tag
-    let tag = '';
-    if (!isPast) {
-      tag = hasPreds
-        ? `<span class="tag tag-predicted">Predictions in</span>`
-        : `<span class="tag tag-open">Predict now</span>`;
-    } else if (isRated) {
-      tag = `<span class="tag tag-scored">✓ Rated</span>`;
-    } else if (hasPreds) {
-      tag = `<span class="tag tag-rate">Rate now</span>`;
-    }
+    const tags = `<div class="race-tags">
+      <span class="tag tag-round">${race.round}</span>
+      ${race.sprint ? '<span class="tag tag-sprint">Sprint</span>' : ''}
+      ${isUpcoming && anyPred ? '<span class="tag tag-predicted">Predictions in</span>' : ''}
+      ${isUpcoming && !anyPred ? '<span class="tag tag-open">Predict now</span>' : ''}
+      ${!isUpcoming && allRated && anyPred ? '<span class="tag tag-scored">✓ Rated</span>' : ''}
+      ${!isUpcoming && anyPred && !allRated ? '<span class="tag tag-rate">Rate now</span>' : ''}
+    </div>`;
 
-    // Action button
     let actionBtn = '';
-    if (!isPast) {
+    if (isUpcoming) {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="openPredModal(${race.id},event)">Predict</button>`;
-    } else if (hasPreds) {
+    } else if (anyPred) {
       actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`;
     }
 
-    // Player prediction/rating rows
-    const playerBlocks = state.players.map(p => {
-      const pred = state.predictions[race.id]?.[p.id] || {};
-      const rating = state.ratings[race.id]?.[p.id] || {};
-      const preds = [pred.p1, pred.p2, pred.p3];
-      if (!preds.some(Boolean)) return '';
-      const pts = keys.filter(k => rating[k] === true).length;
-      const rows = preds.map((text, i) => {
-        if (!text) return '';
-        const key = keys[i];
-        const r = rating[key];
-        const icon = r === true ? '✅' : r === false ? '❌' : '⬜';
-        return `<div class="history-pred-row"><span class="history-pred-icon">${icon}</span><span class="history-pred-text">${text}</span></div>`;
+    // Past races: always show preds strip expanded
+    let strip = '';
+    if (!isUpcoming && anyPred) {
+      const rows = summaries.filter(s => s.hasPreds).map(s => {
+        const bubbles = s.preds.map((pred, i) => {
+          if (!pred) return '';
+          const key = ['p1','p2','p3'][i];
+          const r = s.rating[key];
+          const cls = r === true ? 'correct' : r === false ? 'wrong' : '';
+          return `<span class="pred-bubble ${cls}">${pred}</span>`;
+        }).join('');
+        return `<div class="player-preds-row">
+          <div class="player-preds-avatar" style="background:${s.player.color}">${s.player.initials}</div>
+          <div class="player-preds-content">
+            <div class="player-preds-name">${s.player.name}</div>
+            <div class="preds-bubbles">${bubbles}</div>
+          </div>
+        </div>`;
       }).join('');
-      const ptsLabel = isPast && isRated ? ` · ${pts}/3` : '';
-      return `<div class="history-player-block">
-        <div class="history-player-name" style="color:${p.color}">${p.name}${ptsLabel}</div>
-        ${rows}
-      </div>`;
-    }).join('');
+      strip = `<div class="preds-strip">${rows}</div>`;
+    }
 
-    const bodyContent = playerBlocks || `<p style="color:var(--text3);font-size:.85rem;padding:4px 0">No predictions yet</p>`;
-
-    return `<div class="history-card">
-      <div class="history-header" onclick="this.nextElementSibling.classList.toggle('open')">
-        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
-          <span style="font-size:1.4rem;flex-shrink:0">${race.flag}</span>
-          <div style="min-width:0">
-            <div style="font-weight:600;font-size:.92rem">${race.name}</div>
-            <div style="font-size:.75rem;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              ${race.date}
-              ${race.sprint ? '<span class="tag tag-sprint" style="padding:1px 7px;font-size:.68rem">Sprint</span>' : ''}
-              ${tag}
-            </div>
+    return `<div class="race-card${isUpcoming ? ' clickable' : ''}" onclick="${isUpcoming ? 'handleCalClick('+race.id+',event)' : 'void 0'}">
+      <div class="race-main">
+        <div class="race-left">
+          <span class="race-flag">${race.flag}</span>
+          <div class="race-meta">
+            <div class="race-name">${race.name}</div>
+            <div class="race-date">${race.date} · ${race.country}</div>
+            ${tags}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${actionBtn}<span style="font-size:.8rem;color:var(--text3)">▾</span></div>
+        <div>${actionBtn}</div>
       </div>
-      <div class="history-body">${bodyContent}</div>
+      ${strip}
     </div>`;
   }
 
   let html = `<div class="page-title">Calendar</div><div class="page-sub">All 22 races · ${upcoming.length} to go</div>`;
-  html += RACES.map(raceBlock).join('');
+  html += `<div class="race-list">${RACES.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
 }
 
