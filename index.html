@@ -142,8 +142,8 @@
     .lb-card-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 18px 16px; margin-bottom: 12px; }
     .lb-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     .lb-cards-row { display: flex; gap: 10px; }
-    .lb-player-card { flex: 1; border-radius: 12px; padding: 14px 12px 12px; text-align: center; }
-    .lb-card-medal { font-size: 1.3rem; margin-bottom: 6px; line-height: 1; }
+    .lb-player-card { flex: 1; border-radius: 12px; padding: 14px 12px 12px; text-align: center; position: relative; overflow: hidden; }
+    .lb-card-rank-bg { position: absolute; bottom: -10px; right: 4px; font-size: 5rem; font-weight: 900; line-height: 1; opacity: 0.045; color: var(--text); pointer-events: none; user-select: none; }
     .lb-card-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #fff; margin: 0 auto 7px; }
     .lb-card-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 7px; color: var(--text); }
     .lb-card-pts { font-size: 1.8rem; font-weight: 800; line-height: 1; color: var(--text); }
@@ -552,7 +552,7 @@ function renderLeaderboard() {
       ? `<div class="lb-form">${formHtml}</div>`
       : '';
     return `<div class="lb-player-card" style="${bgStyle}">
-      <div class="lb-card-medal">${medal}</div>
+      <div class="lb-card-rank-bg">${i + 1}</div>
       <div class="lb-card-avatar" style="background:${p.color}">${p.initials}</div>
       <div class="lb-card-name">${p.name}</div>
       <div class="lb-card-pts">${total}</div>
