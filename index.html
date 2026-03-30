@@ -256,6 +256,21 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 600px) { main { padding: 24px 16px 80px; } .page-title { font-size: 1.6rem; } nav button { padding: 6px 10px; font-size: 0.8rem; } }
+
+    /* CHART */
+    .chart-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 20px 16px; }
+    .chart-card-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2); }
+    .chart-card-sub { font-size: 0.78rem; color: var(--text3); margin-top: 2px; margin-bottom: 14px; }
+    .chart-legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text2); font-weight: 500; }
+    .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .chart-scroll { overflow-x: auto; padding-bottom: 4px; }
+    .chart-bars { display: flex; align-items: flex-end; gap: 10px; min-width: max-content; padding-bottom: 4px; }
+    .chart-race-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .chart-bars-row { display: flex; align-items: flex-end; gap: 3px; height: 72px; }
+    .chart-bar { width: 13px; border-radius: 3px 3px 0 0; transition: height .4s ease; }
+    .chart-race-label { font-size: 0.6rem; color: var(--text3); letter-spacing: 0.2px; font-weight: 500; }
+    .chart-y-lines { position: relative; }
   </style>
 </head>
 <body>
@@ -575,6 +590,50 @@ function renderLeaderboard() {
   </div>`;
 }
 
+// ── BAR CHART ──
+function renderBarChart() {
+  if (!state.players.length) return '';
+  const MAX_PTS = 3;
+  const BAR_H = 72;
+
+  const legend = state.players.map(p =>
+    `<div class="chart-legend-item"><div class="chart-legend-dot" style="background:${p.color}"></div>${p.name}</div>`
+  ).join('');
+
+  const bars = RACES.map(race => {
+    const ratingData = state.ratings[race.id];
+    const hasRating = ratingData && Object.keys(ratingData).length > 0;
+
+    const barElems = state.players.map(p => {
+      if (!hasRating) {
+        return `<div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>`;
+      }
+      const rating = ratingData[p.id];
+      if (!rating) {
+        return `<div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>`;
+      }
+      const pts = [rating.p1, rating.p2, rating.p3].filter(v => v === true).length;
+      const h = pts === 0 ? 6 : Math.round((pts / MAX_PTS) * BAR_H);
+      const opacity = pts === 0 ? 0.22 : 1;
+      return `<div class="chart-bar" title="${p.name}: ${pts} pt${pts!==1?'s':''}" style="height:${h}px;background:${p.color};opacity:${opacity};width:13px;border-radius:3px 3px 0 0"></div>`;
+    }).join('');
+
+    const label = race.round.replace('R', '');
+    return `<div class="chart-race-group">
+      <div class="chart-bars-row">${barElems}</div>
+      <div class="chart-race-label">${label}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="section-header">Points by Race</div>
+  <div class="chart-card">
+    <div class="chart-card-title">Predictions Scored</div>
+    <div class="chart-card-sub">Points per race · grey bars = upcoming or unrated</div>
+    <div class="chart-legend">${legend}</div>
+    <div class="chart-scroll"><div class="chart-bars">${bars}</div></div>
+  </div>`;
+}
+
 // ── CALENDAR ──
 function playerPredSummary(raceId) {
   // Returns whether any player has predictions, and a summary per player
@@ -657,6 +716,7 @@ function renderCalendar() {
   html += renderLeaderboard();
   html += renderNextRace(upcoming);
   if(past.length) html += `<div class="section-header">Last Race</div><div class="race-list">${raceCard(past[past.length-1])}</div>`;
+  html += renderBarChart();
   el.innerHTML = html;
 }
 
