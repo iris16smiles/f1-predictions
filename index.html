@@ -267,7 +267,7 @@
     .chart-scroll { overflow-x: auto; padding-bottom: 4px; }
     .chart-bars { display: flex; align-items: flex-end; gap: 10px; min-width: max-content; padding-bottom: 4px; }
     .chart-race-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-    .chart-bars-row { display: flex; align-items: flex-end; gap: 3px; height: 72px; }
+    .chart-bars-row { display: flex; align-items: flex-end; gap: 3px; }
     .chart-bar { width: 13px; border-radius: 3px 3px 0 0; transition: height .4s ease; }
     .chart-race-label { font-size: 0.6rem; color: var(--text3); letter-spacing: 0.2px; font-weight: 500; }
     .chart-y-lines { position: relative; }
@@ -367,28 +367,28 @@ const DOC = db.collection('league').doc('main');
 
 // ── RACES ── (22-race calendar: Bahrain + Saudi Arabia cancelled, Emilia Romagna removed, Madrid added)
 const RACES = [
-  {id:1, round:"R1",  name:"Australian GP",  country:"Australia", flag:"🇦🇺", date:"Mar 8, 2026",  sprint:false},
-  {id:2, round:"R2",  name:"Chinese GP",     country:"China",     flag:"🇨🇳", date:"Mar 15, 2026", sprint:true},
-  {id:3, round:"R3",  name:"Japanese GP",    country:"Japan",     flag:"🇯🇵", date:"Mar 29, 2026", sprint:false},
-  {id:4, round:"R4",  name:"Miami GP",       country:"USA",       flag:"🇺🇸", date:"May 3, 2026",  sprint:true},
-  {id:5, round:"R5",  name:"Canadian GP",    country:"Canada",    flag:"🇨🇦", date:"May 24, 2026", sprint:true},
-  {id:6, round:"R6",  name:"Monaco GP",      country:"Monaco",    flag:"🇲🇨", date:"Jun 7, 2026",  sprint:false},
-  {id:7, round:"R7",  name:"Spanish GP",     country:"Spain",     flag:"🇪🇸", date:"Jun 14, 2026", sprint:false},
-  {id:8, round:"R8",  name:"Austrian GP",    country:"Austria",   flag:"🇦🇹", date:"Jun 28, 2026", sprint:false},
-  {id:9, round:"R9",  name:"British GP",     country:"UK",        flag:"🇬🇧", date:"Jul 5, 2026",  sprint:true},
-  {id:10,round:"R10", name:"Belgian GP",     country:"Belgium",   flag:"🇧🇪", date:"Jul 19, 2026", sprint:false},
-  {id:11,round:"R11", name:"Hungarian GP",   country:"Hungary",   flag:"🇭🇺", date:"Jul 26, 2026", sprint:false},
-  {id:12,round:"R12", name:"Dutch GP",       country:"Netherlands",flag:"🇳🇱",date:"Aug 23, 2026", sprint:true},
-  {id:13,round:"R13", name:"Italian GP",     country:"Italy",     flag:"🇮🇹", date:"Sep 6, 2026",  sprint:false},
-  {id:14,round:"R14", name:"Madrid GP",      country:"Spain",     flag:"🇪🇸", date:"Sep 13, 2026", sprint:false},
-  {id:15,round:"R15", name:"Azerbaijan GP",  country:"Azerbaijan",flag:"🇦🇿", date:"Sep 27, 2026", sprint:false},
-  {id:16,round:"R16", name:"Singapore GP",   country:"Singapore", flag:"🇸🇬", date:"Oct 11, 2026", sprint:true},
-  {id:17,round:"R17", name:"US GP",          country:"USA",       flag:"🇺🇸", date:"Oct 25, 2026", sprint:false},
-  {id:18,round:"R18", name:"Mexico City GP", country:"Mexico",    flag:"🇲🇽", date:"Nov 1, 2026",  sprint:false},
-  {id:19,round:"R19", name:"São Paulo GP",   country:"Brazil",    flag:"🇧🇷", date:"Nov 8, 2026",  sprint:false},
-  {id:20,round:"R20", name:"Las Vegas GP",   country:"USA",       flag:"🇺🇸", date:"Nov 21, 2026", sprint:false},
-  {id:21,round:"R21", name:"Qatar GP",       country:"Qatar",     flag:"🇶🇦", date:"Nov 29, 2026", sprint:false},
-  {id:22,round:"R22", name:"Abu Dhabi GP",   country:"UAE",       flag:"🇦🇪", date:"Dec 6, 2026",  sprint:false},
+  {id:1, round:"R1",  name:"Australian GP",  country:"Australia", flag:"🇦🇺", date:"Mar 8, 2026",  sprint:false, short:"AUS"},
+  {id:2, round:"R2",  name:"Chinese GP",     country:"China",     flag:"🇨🇳", date:"Mar 15, 2026", sprint:true,  short:"CHN"},
+  {id:3, round:"R3",  name:"Japanese GP",    country:"Japan",     flag:"🇯🇵", date:"Mar 29, 2026", sprint:false, short:"JPN"},
+  {id:4, round:"R4",  name:"Miami GP",       country:"USA",       flag:"🇺🇸", date:"May 3, 2026",  sprint:true,  short:"MIA"},
+  {id:5, round:"R5",  name:"Canadian GP",    country:"Canada",    flag:"🇨🇦", date:"May 24, 2026", sprint:true,  short:"CAN"},
+  {id:6, round:"R6",  name:"Monaco GP",      country:"Monaco",    flag:"🇲🇨", date:"Jun 7, 2026",  sprint:false, short:"MON"},
+  {id:7, round:"R7",  name:"Spanish GP",     country:"Spain",     flag:"🇪🇸", date:"Jun 14, 2026", sprint:false, short:"SPA"},
+  {id:8, round:"R8",  name:"Austrian GP",    country:"Austria",   flag:"🇦🇹", date:"Jun 28, 2026", sprint:false, short:"AUT"},
+  {id:9, round:"R9",  name:"British GP",     country:"UK",        flag:"🇬🇧", date:"Jul 5, 2026",  sprint:true,  short:"GBR"},
+  {id:10,round:"R10", name:"Belgian GP",     country:"Belgium",   flag:"🇧🇪", date:"Jul 19, 2026", sprint:false, short:"BEL"},
+  {id:11,round:"R11", name:"Hungarian GP",   country:"Hungary",   flag:"🇭🇺", date:"Jul 26, 2026", sprint:false, short:"HUN"},
+  {id:12,round:"R12", name:"Dutch GP",       country:"Netherlands",flag:"🇳🇱",date:"Aug 23, 2026", sprint:true,  short:"NED"},
+  {id:13,round:"R13", name:"Italian GP",     country:"Italy",     flag:"🇮🇹", date:"Sep 6, 2026",  sprint:false, short:"ITA"},
+  {id:14,round:"R14", name:"Madrid GP",      country:"Spain",     flag:"🇪🇸", date:"Sep 13, 2026", sprint:false, short:"MAD"},
+  {id:15,round:"R15", name:"Azerbaijan GP",  country:"Azerbaijan",flag:"🇦🇿", date:"Sep 27, 2026", sprint:false, short:"AZE"},
+  {id:16,round:"R16", name:"Singapore GP",   country:"Singapore", flag:"🇸🇬", date:"Oct 11, 2026", sprint:true,  short:"SGP"},
+  {id:17,round:"R17", name:"US GP",          country:"USA",       flag:"🇺🇸", date:"Oct 25, 2026", sprint:false, short:"USA"},
+  {id:18,round:"R18", name:"Mexico City GP", country:"Mexico",    flag:"🇲🇽", date:"Nov 1, 2026",  sprint:false, short:"MEX"},
+  {id:19,round:"R19", name:"São Paulo GP",   country:"Brazil",    flag:"🇧🇷", date:"Nov 8, 2026",  sprint:false, short:"SAO"},
+  {id:20,round:"R20", name:"Las Vegas GP",   country:"USA",       flag:"🇺🇸", date:"Nov 21, 2026", sprint:false, short:"LVG"},
+  {id:21,round:"R21", name:"Qatar GP",       country:"Qatar",     flag:"🇶🇦", date:"Nov 29, 2026", sprint:false, short:"QAT"},
+  {id:22,round:"R22", name:"Abu Dhabi GP",   country:"UAE",       flag:"🇦🇪", date:"Dec 6, 2026",  sprint:false, short:"ABU"},
 ];
 
 const PRESET_COLORS = ['#e10600','#30d158','#0071e3','#ff9f0a','#bf5af2','#ff375f','#5ac8fa','#34c759'];
@@ -606,22 +606,32 @@ function renderBarChart() {
 
     const barElems = state.players.map(p => {
       if (!hasRating) {
-        return `<div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>`;
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="font-size:.55rem;color:transparent;font-weight:700;min-height:10px"> </div>
+          <div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>
+        </div>`;
       }
       const rating = ratingData[p.id];
       if (!rating) {
-        return `<div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>`;
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="font-size:.55rem;color:transparent;font-weight:700;min-height:10px"> </div>
+          <div class="chart-bar" style="height:14px;background:#e5e5ea;width:13px;border-radius:3px 3px 0 0"></div>
+        </div>`;
       }
       const pts = [rating.p1, rating.p2, rating.p3].filter(v => v === true).length;
       const h = pts === 0 ? 6 : Math.round((pts / MAX_PTS) * BAR_H);
       const opacity = pts === 0 ? 0.22 : 1;
-      return `<div class="chart-bar" title="${p.name}: ${pts} pt${pts!==1?'s':''}" style="height:${h}px;background:${p.color};opacity:${opacity};width:13px;border-radius:3px 3px 0 0"></div>`;
+      const labelColor = pts === 0 ? 'var(--text3)' : p.color;
+      const labelText = pts === 0 ? '0' : String(pts);
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="font-size:.62rem;font-weight:700;color:${labelColor};min-height:10px;opacity:${pts===0?0.45:1}">${labelText}</div>
+        <div class="chart-bar" title="${p.name}: ${pts} pt${pts!==1?'s':''}" style="height:${h}px;background:${p.color};opacity:${opacity};width:13px;border-radius:3px 3px 0 0"></div>
+      </div>`;
     }).join('');
 
-    const label = race.round.replace('R', '');
     return `<div class="chart-race-group">
-      <div class="chart-bars-row">${barElems}</div>
-      <div class="chart-race-label">${label}</div>
+      <div class="chart-bars-row" style="height:auto;align-items:flex-end">${barElems}</div>
+      <div class="chart-race-label">${race.short}</div>
     </div>`;
   }).join('');
 
