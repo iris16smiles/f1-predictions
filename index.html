@@ -656,7 +656,7 @@ function renderCalendar() {
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
   html += renderLeaderboard();
   html += renderNextRace(upcoming);
-  if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${[...past].reverse().map(raceCard).join('')}</div>`;
+  if(past.length) html += `<div class="section-header">Last Race</div><div class="race-list">${raceCard(past[past.length-1])}</div>`;
   el.innerHTML = html;
 }
 
@@ -1106,7 +1106,7 @@ function renderHistory() {
 
   // Group races into upcoming and past
   const upcoming = RACES.filter(r => new Date(r.date) >= today);
-  const past = [...RACES.filter(r => new Date(r.date) < today)].reverse();
+  const past = RACES.filter(r => new Date(r.date) < today);
 
   function raceBlock(race) {
     const isPast = new Date(race.date) < today;
@@ -1179,14 +1179,7 @@ function renderHistory() {
   }
 
   let html = `<div class="page-title">Calendar</div><div class="page-sub">All 22 races · ${upcoming.length} to go</div>`;
-
-  if (upcoming.length) {
-    html += `<div class="section-header">Upcoming</div>${upcoming.map(raceBlock).join('')}`;
-  }
-  if (past.length) {
-    html += `<div class="section-header">Past Races</div>${past.map(raceBlock).join('')}`;
-  }
-
+  html += RACES.map(raceBlock).join('');
   el.innerHTML = html;
 }
 
