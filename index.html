@@ -264,7 +264,7 @@
   <div class="logo">F1 26 Predictions</div>
   <nav>
     <button class="active" onclick="showPage('calendar',this)">Home</button>
-    <button onclick="showPage('history',this)">History</button>
+    <button onclick="showPage('history',this)">Calendar</button>
     <button onclick="showPage('settings',this)">Players</button>
   </nav>
 </header>
@@ -653,14 +653,10 @@ function renderCalendar() {
     </div>`;
   }
 
-  const nextRace = upcoming[0];
-  const restUpcoming = upcoming.slice(1); // exclude next race from the list (shown in hero)
-
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
   html += renderLeaderboard();
   html += renderNextRace(upcoming);
   if(past.length) html += `<div class="section-header">Past Races</div><div class="race-list">${[...past].reverse().map(raceCard).join('')}</div>`;
-  if(restUpcoming.length) html += `<div class="section-header">Upcoming</div><div class="race-list">${restUpcoming.map(raceCard).join('')}</div>`;
   el.innerHTML = html;
 }
 
@@ -1105,41 +1101,93 @@ function calcPlayerPoints(playerId) {
 // ── HISTORY ──
 function renderHistory() {
   const el = document.getElementById('page-history');
-  const ratedRaces = RACES.filter(r => state.ratings[r.id] && Object.keys(state.ratings[r.id]).length);
-  if(!ratedRaces.length) {
-    el.innerHTML='<div class="page-title">History</div><div class="page-sub">Past predictions</div><div class="empty"><div class="empty-icon">📋</div><h3>Nothing rated yet</h3><p>After a race, click ⭐ Rate on the calendar</p></div>'; return;
-  }
-  const cards = ratedRaces.map(race => {
+  const today = new Date();
+  const keys = ['p1','p2','p3'];
+
+  // Group races into upcoming and past
+  const upcoming = RACES.filter(r => new Date(r.date) >= today);
+  const past = [...RACES.filter(r => new Date(r.date) < today)].reverse();
+
+  function raceBlock(race) {
+    const isPast = new Date(race.date) < today;
+    const hasPreds = state.players.some(p => {
+      const pred = state.predictions[race.id]?.[p.id] || {};
+      return pred.p1 || pred.p2 || pred.p3;
+    });
+    const isRated = state.ratings[race.id] && Object.keys(state.ratings[race.id]).length;
+
+    // Status tag
+    let tag = '';
+    if (!isPast) {
+      tag = hasPreds
+        ? `<span class="tag tag-predicted">Predictions in</span>`
+        : `<span class="tag tag-open">Predict now</span>`;
+    } else if (isRated) {
+      tag = `<span class="tag tag-scored">✓ Rated</span>`;
+    } else if (hasPreds) {
+      tag = `<span class="tag tag-rate">Rate now</span>`;
+    }
+
+    // Action button
+    let actionBtn = '';
+    if (!isPast) {
+      actionBtn = `<button class="btn btn-primary btn-sm" onclick="openPredModal(${race.id},event)">Predict</button>`;
+    } else if (hasPreds) {
+      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`;
+    }
+
+    // Player prediction/rating rows
     const playerBlocks = state.players.map(p => {
       const pred = state.predictions[race.id]?.[p.id] || {};
       const rating = state.ratings[race.id]?.[p.id] || {};
-      const preds = [pred.p1,pred.p2,pred.p3];
-      const keys = ['p1','p2','p3'];
-      const pts = keys.filter(k=>rating[k]===true).length;
-      if(!preds.some(Boolean)) return '';
-      const rows = preds.map((text,i)=>{
-        if(!text) return '';
-        const key=keys[i]; const r=rating[key];
-        const icon = r===true ? '✅' : r===false ? '❌' : '⬜';
+      const preds = [pred.p1, pred.p2, pred.p3];
+      if (!preds.some(Boolean)) return '';
+      const pts = keys.filter(k => rating[k] === true).length;
+      const rows = preds.map((text, i) => {
+        if (!text) return '';
+        const key = keys[i];
+        const r = rating[key];
+        const icon = r === true ? '✅' : r === false ? '❌' : '⬜';
         return `<div class="history-pred-row"><span class="history-pred-icon">${icon}</span><span class="history-pred-text">${text}</span></div>`;
       }).join('');
+      const ptsLabel = isPast && isRated ? ` · ${pts}/3` : '';
       return `<div class="history-player-block">
-        <div class="history-player-name" style="color:${p.color}">${p.name} · ${pts}/3 pts</div>
+        <div class="history-player-name" style="color:${p.color}">${p.name}${ptsLabel}</div>
         ${rows}
       </div>`;
     }).join('');
+
+    const bodyContent = playerBlocks || `<p style="color:var(--text3);font-size:.85rem;padding:4px 0">No predictions yet</p>`;
+
     return `<div class="history-card">
       <div class="history-header" onclick="this.nextElementSibling.classList.toggle('open')">
-        <div style="display:flex;align-items:center;gap:14px">
-          <span style="font-size:1.5rem">${race.flag}</span>
-          <div><div style="font-weight:600">${race.name}</div><div style="font-size:.78rem;color:var(--text2);margin-top:2px">${race.date}</div></div>
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+          <span style="font-size:1.4rem;flex-shrink:0">${race.flag}</span>
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:.92rem">${race.name}</div>
+            <div style="font-size:.75rem;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              ${race.date}
+              ${race.sprint ? '<span class="tag tag-sprint" style="padding:1px 7px;font-size:.68rem">Sprint</span>' : ''}
+              ${tag}
+            </div>
+          </div>
         </div>
-        <span style="font-size:.8rem;color:var(--text2)">▾</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${actionBtn}<span style="font-size:.8rem;color:var(--text3)">▾</span></div>
       </div>
-      <div class="history-body">${playerBlocks||'<p style="color:var(--text3);font-size:.85rem">No predictions for this race</p>'}</div>
+      <div class="history-body">${bodyContent}</div>
     </div>`;
-  }).join('');
-  el.innerHTML = `<div class="page-title">History</div><div class="page-sub">Past predictions & ratings</div>${cards}`;
+  }
+
+  let html = `<div class="page-title">Calendar</div><div class="page-sub">All 22 races · ${upcoming.length} to go</div>`;
+
+  if (upcoming.length) {
+    html += `<div class="section-header">Upcoming</div>${upcoming.map(raceBlock).join('')}`;
+  }
+  if (past.length) {
+    html += `<div class="section-header">Past Races</div>${past.map(raceBlock).join('')}`;
+  }
+
+  el.innerHTML = html;
 }
 
 // ── SETTINGS ──
