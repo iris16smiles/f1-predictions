@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // F1 Predictions app — single shared document, no auth required.
+    // Only the league/main document is accessible; all other paths are denied.
+    match /league/main {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasOnly(['players', 'predictions', 'ratings'])
+                   && request.resource.data.players is list
+                   && request.resource.data.predictions is map
+                   && request.resource.data.ratings is map;
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
