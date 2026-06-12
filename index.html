@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>F1 26 Predictions</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e10600">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="F1 Preds">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
@@ -271,6 +277,40 @@
     .chart-bar { width: 13px; border-radius: 3px 3px 0 0; transition: height .4s ease; }
     .chart-race-label { font-size: 0.6rem; color: var(--text3); letter-spacing: 0.2px; font-weight: 500; }
     .chart-y-lines { position: relative; }
+
+    /* ── ENGAGEMENT ── */
+    .pred-bubble { cursor: pointer; position: relative; }
+    .pred-bubble.locked { background: repeating-linear-gradient(45deg,#ececf0,#ececf0 6px,#f5f5f7 6px,#f5f5f7 12px); color: var(--text3); font-style: italic; cursor: default; }
+    .react-chips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+    .react-chip { font-size: .68rem; background: #fff; border: 1px solid var(--border); border-radius: 980px; padding: 1px 5px; }
+    .react-chip.mine { border-color: var(--blue); background: rgba(0,113,227,.08); }
+    .react-picker { position: absolute; bottom: calc(100% + 6px); left: 0; background: #fff; border-radius: 980px; box-shadow: var(--shadow-lg); padding: 4px 6px; display: flex; gap: 2px; z-index: 50; animation: popIn .15s; }
+    .react-picker button { background: none; border: none; font-size: 1.05rem; cursor: pointer; padding: 3px 5px; border-radius: 50%; font-family: inherit; }
+    .react-picker button:hover { background: var(--surface2); }
+    .identity-btn { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--surface2); border: 1.5px solid transparent; border-radius: var(--radius-sm); padding: 12px 16px; font-family: inherit; font-size: .95rem; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: all .15s; color: var(--text); }
+    .identity-btn:hover { border-color: var(--pc); background: #fff; }
+    .nudge-banner { background: linear-gradient(135deg,rgba(225,6,0,.07),rgba(255,159,10,.07)); border: 1px solid rgba(225,6,0,.15); border-radius: var(--radius); padding: 13px 18px; font-size: .85rem; margin-bottom: 12px; cursor: pointer; }
+    .rivalry-banner { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--text2); text-align: center; line-height: 1.5; }
+    .lb-badges { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .badge-chip { font-size: .66rem; font-weight: 700; background: #fff; border: 1px solid var(--border); border-radius: 980px; padding: 2px 7px; }
+    .lb-card-team { font-size: .62rem; color: var(--text3); margin-top: -5px; margin-bottom: 7px; }
+    .player-row select { background: var(--surface2); border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--text); padding: 10px 8px; font-size: .85rem; font-family: inherit; outline: none; flex-shrink: 0; max-width: 130px; }
+
+    /* ── SCORE REVEAL ── */
+    .reveal-inner { padding: 24px 26px 26px; }
+    .reveal-header { text-align: center; margin-bottom: 18px; }
+    .reveal-flag { font-size: 2.6rem; }
+    .reveal-header h2 { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
+    .reveal-header p { font-size: .82rem; color: var(--text2); margin-top: 2px; }
+    .reveal-row { border-top: 1px solid var(--border); padding: 14px 0; }
+    .reveal-player { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; font-size: .92rem; }
+    .reveal-score { margin-left: auto; font-size: 1.15rem; font-weight: 800; opacity: 0; animation: scorePop .45s cubic-bezier(.34,1.4,.64,1) forwards; }
+    .reveal-pred { display: flex; gap: 8px; font-size: .85rem; line-height: 1.45; padding: 4px 0; opacity: 0; animation: revealIn .4s ease forwards; }
+    .reveal-strike { color: var(--text3); text-decoration: line-through; }
+    .reveal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    @keyframes revealIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes scorePop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+    #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 600; display: none; }
   </style>
 </head>
 <body>
@@ -302,7 +342,7 @@
     <div class="modal-divider"></div>
     <div class="modal-body">
       <div class="player-tabs" id="pred-player-tabs"></div>
-      <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;">Write 3 predictions for this race. After it's over, you'll rate each one yourself — 1 point for every correct call.</p>
+      <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;">Write 3 predictions for this race. 🔒 They stay hidden from the others until everyone has predicted. 1 point per correct call.</p>
       <div class="pred-form">
         <div class="pred-input-row"><div class="pred-num">1</div><textarea id="pred-1" rows="2" placeholder="e.g. Safety car will be deployed"></textarea></div>
         <div class="pred-input-row"><div class="pred-num">2</div><textarea id="pred-2" rows="2" placeholder="e.g. Verstappen wins from pole"></textarea></div>
@@ -349,6 +389,22 @@
   </div>
 </div>
 
+<!-- IDENTITY PICKER -->
+<div class="modal-overlay" id="identity-overlay">
+  <div class="setup-card">
+    <div class="setup-icon">👋</div>
+    <h2>Who are you?</h2>
+    <p>Pick yourself so predictions and reactions on this device are yours — and others' picks stay hidden until everyone's in.</p>
+    <div id="identity-grid"></div>
+  </div>
+</div>
+
+<!-- SCORE REVEAL -->
+<div class="modal-overlay" id="reveal-overlay">
+  <div class="modal"><div class="reveal-inner" id="reveal-body"></div></div>
+</div>
+<canvas id="confetti-canvas"></canvas>
+
 <div id="toast"></div>
 
 <script>
@@ -393,23 +449,66 @@ const RACES = [
 
 const PRESET_COLORS = ['#e10600','#30d158','#0071e3','#ff9f0a','#bf5af2','#ff375f','#5ac8fa','#34c759'];
 
+const TEAMS = {
+  'McLaren': '#FF8000', 'Ferrari': '#E8002D', 'Red Bull': '#3671C6', 'Mercedes': '#00A19B',
+  'Aston Martin': '#229971', 'Alpine': '#0093CC', 'Williams': '#005AFF', 'Racing Bulls': '#6692FF',
+  'Sauber': '#00A14E', 'Haas': '#8a9095',
+};
+const REACTION_EMOJIS = ['😂','🔥','💀','👏','😬'];
+
 // ── STATE ──
 // predictions[raceId][playerId] = { p1:'text', p2:'text', p3:'text' }
 // ratings[raceId][playerId]     = { p1: true/false/null, p2:..., p3:... }
-let state = { players:[], predictions:{}, ratings:{} };
+let state = { players:[], predictions:{}, ratings:{}, reactions:{} };
 let currentPage = 'calendar';
+let ME = localStorage.getItem('f1-me') || null;
+let countdownTimer = null;
 
 DOC.onSnapshot(snap => {
   state = snap.exists ? snap.data() : { players:[], predictions:{}, ratings:{} };
   state.predictions = state.predictions||{};
   state.ratings = state.ratings||{};
+  state.reactions = state.reactions||{};
   document.getElementById('sync-dot')?.classList.add('live');
   document.getElementById('setup-overlay').style.display = (snap.exists && state.players.length) ? 'none' : 'flex';
+  checkIdentity();
   renderPage(currentPage);
 }, () => showToast('Connection error', true));
 
 async function saveState() {
-  try { await DOC.set(state); } catch(e) { showToast('Save failed', true); }
+  const payload = { players: state.players, predictions: state.predictions, ratings: state.ratings };
+  if (Object.keys(state.reactions||{}).length) payload.reactions = state.reactions;
+  try { await DOC.set(payload); } catch(e) { showToast('Save failed', true); }
+}
+
+// ── IDENTITY ──
+function whoAmI() { return state.players.find(p => p.id === ME) || null; }
+function checkIdentity() {
+  const ov = document.getElementById('identity-overlay');
+  if (!state.players.length || (ME && state.players.some(p => p.id === ME))) { ov.classList.remove('open'); return; }
+  document.getElementById('identity-grid').innerHTML = state.players.map(p =>
+    `<button class="identity-btn" style="--pc:${p.color}" onclick="setIdentity('${p.id}')">
+      <span class="player-preds-avatar" style="background:${p.color}">${p.initials}</span>${p.name}</button>`
+  ).join('');
+  ov.classList.add('open');
+}
+function setIdentity(pid) {
+  ME = pid; localStorage.setItem('f1-me', pid);
+  document.getElementById('identity-overlay').classList.remove('open');
+  renderPage(currentPage);
+}
+function switchIdentity() { ME = null; localStorage.removeItem('f1-me'); checkIdentity(); }
+
+// ── REVEAL LOGIC ──
+// Predictions for an upcoming race stay hidden until everyone has predicted (or race day arrives)
+function isRevealed(raceId) {
+  const race = RACES.find(r => r.id == raceId);
+  if (!race || new Date(race.date) <= new Date()) return true;
+  if (!state.players.length) return false;
+  return state.players.every(p => {
+    const pr = state.predictions[raceId]?.[p.id];
+    return pr && (pr.p1 || pr.p2 || pr.p3);
+  });
 }
 
 // ── NAV ──
@@ -463,9 +562,9 @@ function renderNextRace(upcoming) {
   if (diffDays <= 0) {
     countdownPill = `<span class="next-race-countdown today-pill">🚨 Race day today!</span>`;
     labelText = `<div class="next-race-hero-label today">▶ Race happening now</div>`;
-  } else if (diffDays === 1) {
-    countdownPill = `<span class="next-race-countdown today-pill">🚨 Tomorrow!</span>`;
-    labelText = `<div class="next-race-hero-label today">▶ Next race — tomorrow</div>`;
+  } else if (diffMs <= 48 * 3600000) {
+    countdownPill = `<span class="next-race-countdown today-pill">⏱ <span id="live-cd" data-target="${raceDate.getTime()}">${fmtCountdown(diffMs)}</span></span>`;
+    labelText = `<div class="next-race-hero-label today">▶ Next race — ${diffDays === 1 ? 'tomorrow' : 'this weekend'}</div>`;
   } else if (diffDays <= 7) {
     countdownPill = `<span class="next-race-countdown soon-pill">⏱ ${diffDays} days away</span>`;
     labelText = `<div class="next-race-hero-label">▶ Next race — this week</div>`;
@@ -559,20 +658,28 @@ function renderLeaderboard() {
     return { p, total, totalPreds, accuracy, formHtml };
   }).sort((a,b) => b.total - a.total);
 
+  const badges = computeBadges();
   const cards = playerStats.map(({p, total, totalPreds, accuracy, formHtml}, i) => {
-    const medal = rankMedal[i] || (i+1);
     const bgStyle = i === 0 ? 'background:linear-gradient(135deg,#fffbe6,#fff3cc)' : 'background:var(--surface2)';
     const accLine = hasHistory ? `${accuracy}% accurate` : '–';
     const formRow = hasHistory
       ? `<div class="lb-form">${formHtml}</div>`
       : '';
+    const b = badges[p.id] || {};
+    const chips = [
+      b.streak >= 3 ? `<span class="badge-chip" title="${b.streak} correct calls in a row">🔥${b.streak}</span>` : '',
+      b.perfect ? `<span class="badge-chip" title="Perfect races (3/3 correct)">🎯${b.perfect}</span>` : '',
+      b.solo ? `<span class="badge-chip" title="Races where only ${p.name} scored">⚡${b.solo}</span>` : '',
+    ].join('');
     return `<div class="lb-player-card" style="${bgStyle}">
       <div class="lb-card-rank-bg">${i + 1}</div>
       <div class="lb-card-avatar" style="background:${p.color}">${p.initials}</div>
       <div class="lb-card-name">${p.name}</div>
+      ${p.team ? `<div class="lb-card-team">${p.team}</div>` : ''}
       <div class="lb-card-pts">${total}</div>
       <div class="lb-card-ptslabel">points</div>
       <div class="lb-card-acc">${accLine}</div>
+      ${chips ? `<div class="lb-badges">${chips}</div>` : ''}
       ${formRow}
     </div>`;
   }).join('');
@@ -581,13 +688,58 @@ function renderLeaderboard() {
     ? `${ratedRaces.length} race${ratedRaces.length !== 1 ? 's' : ''} rated`
     : '1 pt per correct prediction';
 
+  // Rivalry line: leader vs chaser
+  let rivalry = '';
+  if (hasHistory && playerStats.length >= 2) {
+    const [a, b2] = playerStats;
+    const gap = a.total - b2.total;
+    const racesLeft = RACES.length - ratedRaces.length;
+    if (gap === 0) {
+      rivalry = `⚔️ ${a.p.name} and ${b2.p.name} are dead level — ${racesLeft} races to settle it`;
+    } else {
+      const need = Math.ceil((gap + 1) / 3);
+      rivalry = `⚔️ ${a.p.name} leads ${b2.p.name} by ${gap} · ${b2.p.name} needs ${need} perfect race${need !== 1 ? 's' : ''} to take P1 · ${racesLeft} to go`;
+    }
+  }
+
   return `<div class="lb-card-wrap">
     <div class="lb-card-header">
       <span class="season-summary-title">🏆 Standings</span>
       <span class="season-summary-sub">${subtitle}</span>
     </div>
     <div class="lb-cards-row">${cards}</div>
+    ${rivalry ? `<div class="rivalry-banner">${rivalry}</div>` : ''}
   </div>`;
+}
+
+// ── BADGES ──
+// 🔥 current streak of consecutive correct calls · 🎯 perfect races · ⚡ races where only you scored
+function computeBadges() {
+  const out = {};
+  if (!state.players.length) return out;
+  const ratedRaces = RACES.filter(r => state.ratings[r.id] && Object.keys(state.ratings[r.id]).length);
+  const streaks = {};
+  state.players.forEach(p => { out[p.id] = { streak: 0, perfect: 0, solo: 0 }; streaks[p.id] = 0; });
+  ratedRaces.forEach(race => {
+    const scores = {};
+    state.players.forEach(p => {
+      const r = state.ratings[race.id]?.[p.id];
+      const pts = r ? ['p1','p2','p3'].filter(k => r[k] === true).length : 0;
+      scores[p.id] = r ? pts : null;
+      if (r) {
+        ['p1','p2','p3'].forEach(k => {
+          if (r[k] === true) streaks[p.id]++;
+          else if (r[k] === false) streaks[p.id] = 0;
+        });
+        if (pts === 3) out[p.id].perfect++;
+      }
+    });
+    state.players.forEach(p => {
+      if (scores[p.id] > 0 && state.players.every(q => q.id === p.id || !scores[q.id])) out[p.id].solo++;
+    });
+  });
+  state.players.forEach(p => out[p.id].streak = streaks[p.id]);
+  return out;
 }
 
 // ── BAR CHART ──
@@ -656,6 +808,41 @@ function playerPredSummary(raceId) {
   });
 }
 
+// Shared predictions strip: handles hidden-until-reveal and emoji reactions
+function buildPredsStrip(race, summaries, isUpcoming) {
+  const revealed = isRevealed(race.id);
+  const rows = summaries.filter(s => s.hasPreds).map(s => {
+    const hidden = isUpcoming && !revealed && s.player.id !== ME;
+    const bubbles = s.preds.map((pred, i) => {
+      if (!pred) return '';
+      const key = ['p1','p2','p3'][i];
+      if (hidden) return `<span class="pred-bubble locked">🔒 hidden</span>`;
+      const r = s.rating[key];
+      const cls = r === true ? 'correct' : r === false ? 'wrong' : '';
+      return `<span class="pred-bubble ${cls}" onclick="toggleReactPicker('${race.id}','${s.player.id}','${key}',event)">${pred}${reactionChips(race.id, s.player.id, key)}</span>`;
+    }).join('');
+    return `<div class="player-preds-row">
+      <div class="player-preds-avatar" style="background:${s.player.color}">${s.player.initials}</div>
+      <div class="player-preds-content">
+        <div class="player-preds-name">${s.player.name}${hidden ? ' · 🔒 locked until everyone predicts' : ''}</div>
+        <div class="preds-bubbles">${bubbles}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="preds-strip">${rows}</div>`;
+}
+
+function renderNudge(upcoming) {
+  const me = whoAmI();
+  if (!me || !upcoming.length) return '';
+  const race = upcoming[0];
+  const diffMs = new Date(race.date) - new Date();
+  if (diffMs > 72 * 3600000 || diffMs <= 0) return '';
+  const pr = state.predictions[race.id]?.[me.id];
+  if (pr && (pr.p1 || pr.p2 || pr.p3)) return '';
+  return `<div class="nudge-banner" onclick="openPredModal(${race.id},event)">⏰ <strong>${me.name}</strong>, the ${race.name} is almost here and you haven't predicted yet — tap to get yours in!</div>`;
+}
+
 function renderCalendar() {
   const today = new Date();
   const el = document.getElementById('page-calendar');
@@ -681,30 +868,13 @@ function renderCalendar() {
     if(isUpcoming) {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="openPredModal(${race.id},event)">Predict</button>`;
     } else if(anyPred) {
-      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`;
+      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`
+        + (allRated ? `<button class="btn btn-ghost btn-sm" title="Share results card" onclick="shareRaceCard(${race.id},event)">📤</button>` : '');
     }
 
     // Predictions strip — show for ALL races that have any predictions
     let strip = '';
-    if(anyPred) {
-      const rows = summaries.filter(s=>s.hasPreds).map(s => {
-        const bubbles = s.preds.map((pred, i) => {
-          if(!pred) return '';
-          const key = ['p1','p2','p3'][i];
-          const r = s.rating[key];
-          const cls = r===true ? 'correct' : r===false ? 'wrong' : '';
-          return `<span class="pred-bubble ${cls}">${pred}</span>`;
-        }).join('');
-        return `<div class="player-preds-row">
-          <div class="player-preds-avatar" style="background:${s.player.color}">${s.player.initials}</div>
-          <div class="player-preds-content">
-            <div class="player-preds-name">${s.player.name}</div>
-            <div class="preds-bubbles">${bubbles}</div>
-          </div>
-        </div>`;
-      }).join('');
-      strip = `<div class="preds-strip">${rows}</div>`;
-    }
+    if(anyPred) strip = buildPredsStrip(race, summaries, isUpcoming);
 
     return `<div class="race-card${isUpcoming?' clickable':''}" onclick="${isUpcoming?'handleCalClick('+race.id+',event)':'void 0'}">
       <div class="race-main">
@@ -723,11 +893,13 @@ function renderCalendar() {
   }
 
   let html = `<div class="page-title">2026 Season</div><div class="page-sub">${upcoming.length} race${upcoming.length!==1?'s':''} to go · 22 rounds</div>`;
+  html += renderNudge(upcoming);
   html += renderLeaderboard();
   html += renderNextRace(upcoming);
   if(past.length) html += `<div class="section-header">Last Race</div><div class="race-list">${raceCard(past[past.length-1])}</div>`;
   html += renderBarChart();
   el.innerHTML = html;
+  initLiveCountdown();
 }
 
 function handleCalClick(raceId, e) {
@@ -744,14 +916,17 @@ function openPredModal(raceId, e) {
   if(e) e.stopPropagation();
   if(!state.players.length) return;
   currentPredRaceId = raceId;
-  currentPredPlayerId = state.players[0].id;
   tempPreds = {};
   const race = RACES.find(r=>r.id===raceId);
   document.getElementById('pred-modal-title').textContent = race.flag + ' ' + race.name;
   document.getElementById('pred-modal-sub').textContent = race.date + ' · ' + race.country;
-  document.getElementById('pred-player-tabs').innerHTML = state.players.map((p,i) =>
+  // Only "me" can enter predictions on this device — keeps the reveal honest
+  const mePlayer = whoAmI();
+  currentPredPlayerId = mePlayer ? mePlayer.id : state.players[0].id;
+  const tabPlayers = mePlayer ? [mePlayer] : state.players;
+  document.getElementById('pred-player-tabs').innerHTML = tabPlayers.map((p,i) =>
     `<button class="player-tab ${i===0?'active':''}" style="${i===0?'background:'+p.color+';border-color:'+p.color+';color:#fff':''}" onclick="switchPredPlayer('${p.id}',this,'${p.color}')">${p.name}</button>`
-  ).join('');
+  ).join('') + (mePlayer ? `<button class="player-tab" style="border-style:dashed" onclick="closePredModal();switchIdentity()">Not ${mePlayer.name}?</button>` : '');
   loadPredForPlayer();
   document.getElementById('predict-modal').classList.add('open');
 }
@@ -1148,10 +1323,11 @@ async function saveRatings() {
   const btn = document.getElementById('save-rating-btn'); btn.disabled=true; btn.textContent='Saving…';
   if(!state.ratings[currentRateRaceId]) state.ratings[currentRateRaceId] = {};
   Object.assign(state.ratings[currentRateRaceId], tempRatings);
+  const revealRaceId = currentRateRaceId;
   await saveState();
   btn.disabled=false; btn.textContent='Save Ratings';
   closeRateModal();
-  showToast('Ratings saved ⭐');
+  showScoreReveal(revealRaceId);
 }
 
 function closeRateModal() { document.getElementById('rate-modal').classList.remove('open'); }
@@ -1193,30 +1369,13 @@ function renderHistory() {
     if (isUpcoming) {
       actionBtn = `<button class="btn btn-primary btn-sm" onclick="openPredModal(${race.id},event)">Predict</button>`;
     } else if (anyPred) {
-      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`;
+      actionBtn = `<button class="btn btn-ghost btn-sm" onclick="openRateModal(${race.id},event)">Rate</button>`
+        + (allRated ? `<button class="btn btn-ghost btn-sm" title="Share results card" onclick="shareRaceCard(${race.id},event)">📤</button>` : '');
     }
 
-    // Past races: always show preds strip expanded
+    // Show preds strip for every race with predictions (locked for unrevealed upcoming)
     let strip = '';
-    if (!isUpcoming && anyPred) {
-      const rows = summaries.filter(s => s.hasPreds).map(s => {
-        const bubbles = s.preds.map((pred, i) => {
-          if (!pred) return '';
-          const key = ['p1','p2','p3'][i];
-          const r = s.rating[key];
-          const cls = r === true ? 'correct' : r === false ? 'wrong' : '';
-          return `<span class="pred-bubble ${cls}">${pred}</span>`;
-        }).join('');
-        return `<div class="player-preds-row">
-          <div class="player-preds-avatar" style="background:${s.player.color}">${s.player.initials}</div>
-          <div class="player-preds-content">
-            <div class="player-preds-name">${s.player.name}</div>
-            <div class="preds-bubbles">${bubbles}</div>
-          </div>
-        </div>`;
-      }).join('');
-      strip = `<div class="preds-strip">${rows}</div>`;
-    }
+    if (anyPred) strip = buildPredsStrip(race, summaries, isUpcoming);
 
     return `<div class="race-card${isUpcoming ? ' clickable' : ''}" onclick="${isUpcoming ? 'handleCalClick('+race.id+',event)' : 'void 0'}">
       <div class="race-main">
@@ -1244,7 +1403,7 @@ function renderSettingsPlayers() {
   const el = document.getElementById('page-settings');
   el.innerHTML = `<div class="page-title">Players</div><div class="page-sub">Manage your league members</div>
   <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;">
-    <div id="edit-grid">${state.players.map((p,i)=>`<div class="player-row"><input type="color" value="${p.color}" id="ec-${i}"><input type="text" value="${p.name}" id="en-${i}" placeholder="Player name"></div>`).join('')}</div>
+    <div id="edit-grid">${state.players.map((p,i)=>`<div class="player-row"><input type="color" value="${p.color}" id="ec-${i}"><input type="text" value="${p.name}" id="en-${i}" placeholder="Player name"><select id="et-${i}" onchange="applyTeam(${i})" title="Pick your team — sets your color"><option value="">Team…</option>${Object.keys(TEAMS).map(t=>`<option ${p.team===t?'selected':''}>${t}</option>`).join('')}</select></div>`).join('')}</div>
     <button class="add-btn" onclick="addEditPlayer()">+ Add Player</button>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
       <button class="btn btn-ghost" id="import-btn" style="padding:10px 18px;font-size:.82rem" onclick="importHistoricalData()">📥 Import 2026 historical data</button>
@@ -1255,15 +1414,20 @@ function renderSettingsPlayers() {
 function addEditPlayer() {
   const g=document.getElementById('edit-grid'); const i=g.children.length; if(i>=8) return;
   const r=document.createElement('div'); r.className='player-row';
-  r.innerHTML=`<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="ec-${i}"><input type="text" placeholder="New player name" id="en-${i}">`;
+  r.innerHTML=`<input type="color" value="${PRESET_COLORS[i%PRESET_COLORS.length]}" id="ec-${i}"><input type="text" placeholder="New player name" id="en-${i}"><select id="et-${i}" onchange="applyTeam(${i})"><option value="">Team…</option>${Object.keys(TEAMS).map(t=>`<option>${t}</option>`).join('')}</select>`;
   g.appendChild(r);
+}
+function applyTeam(i) {
+  const t = document.getElementById('et-'+i)?.value;
+  if (t && TEAMS[t]) document.getElementById('ec-'+i).value = TEAMS[t];
 }
 async function savePlayers() {
   const g=document.getElementById('edit-grid'); const np=[];
   for(let i=0;i<g.children.length;i++){
     const name=document.getElementById('en-'+i)?.value.trim();
     const color=document.getElementById('ec-'+i)?.value||PRESET_COLORS[i];
-    if(name){const ex=state.players[i]; np.push(ex?{...ex,name,color,initials:name.slice(0,2).toUpperCase()}:{id:'p'+Date.now()+i,name,color,initials:name.slice(0,2).toUpperCase()});}
+    const team=document.getElementById('et-'+i)?.value||null;
+    if(name){const ex=state.players[i]; np.push(ex?{...ex,name,color,team,initials:name.slice(0,2).toUpperCase()}:{id:'p'+Date.now()+i,name,color,team,initials:name.slice(0,2).toUpperCase()});}
   }
   if(!np.length){showToast('Add at least one player',true);return;}
   state.players=np; await saveState(); showToast('Players saved 👥');
@@ -1334,6 +1498,169 @@ async function importHistoricalData() {
   renderSettingsPlayers();
   showToast('Historical data imported! 🏁');
 }
+
+// ── LIVE COUNTDOWN ──
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'now!';
+  const d = Math.floor(ms/86400000), h = Math.floor(ms%86400000/3600000), m = Math.floor(ms%3600000/60000);
+  return (d ? d+'d ' : '') + h + 'h ' + m + 'm';
+}
+function initLiveCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  const el = document.getElementById('live-cd');
+  if (!el) return;
+  const target = +el.dataset.target;
+  countdownTimer = setInterval(() => {
+    const e = document.getElementById('live-cd');
+    if (!e) { clearInterval(countdownTimer); countdownTimer = null; return; }
+    e.textContent = fmtCountdown(target - Date.now());
+  }, 30000);
+}
+
+// ── REACTIONS ──
+let reactTarget = null;
+function reactionChips(raceId, pid, key) {
+  const rx = state.reactions?.[raceId]?.[pid]?.[key];
+  if (!rx) return '';
+  const chips = Object.entries(rx).filter(([,who]) => who && who.length).map(([emoji, who]) =>
+    `<span class="react-chip ${who.includes(ME) ? 'mine' : ''}">${emoji}${who.length > 1 ? who.length : ''}</span>`).join('');
+  return chips ? `<span class="react-chips">${chips}</span>` : '';
+}
+function toggleReactPicker(raceId, pid, key, e) {
+  e.stopPropagation();
+  if (!ME) { checkIdentity(); return; }
+  const existing = document.getElementById('react-picker');
+  closeReactPicker();
+  if (existing && existing.parentElement === e.currentTarget) return; // toggle off
+  reactTarget = { raceId, pid, key };
+  const pick = document.createElement('div');
+  pick.className = 'react-picker'; pick.id = 'react-picker';
+  pick.innerHTML = REACTION_EMOJIS.map(em => `<button onclick="react('${em}',event)">${em}</button>`).join('');
+  e.currentTarget.appendChild(pick);
+}
+function closeReactPicker() { document.getElementById('react-picker')?.remove(); }
+document.addEventListener('click', closeReactPicker);
+async function react(emoji, e) {
+  e.stopPropagation();
+  if (!reactTarget) return;
+  const { raceId, pid, key } = reactTarget;
+  if (!state.reactions[raceId]) state.reactions[raceId] = {};
+  if (!state.reactions[raceId][pid]) state.reactions[raceId][pid] = {};
+  if (!state.reactions[raceId][pid][key]) state.reactions[raceId][pid][key] = {};
+  const arr = state.reactions[raceId][pid][key][emoji] || [];
+  state.reactions[raceId][pid][key][emoji] = arr.includes(ME) ? arr.filter(x => x !== ME) : [...arr, ME];
+  closeReactPicker();
+  await saveState();
+}
+
+// ── SCORE REVEAL ──
+function showScoreReveal(raceId) {
+  const race = RACES.find(r => r.id == raceId);
+  const summaries = playerPredSummary(raceId).filter(s => s.hasPreds);
+  if (!race || !summaries.length) { showToast('Ratings saved ⭐'); return; }
+  const scores = summaries.map(s => ({ s, pts: ['p1','p2','p3'].filter(k => s.rating[k] === true).length }));
+  const maxPts = Math.max(...scores.map(x => x.pts));
+  let html = `<div class="reveal-header"><div class="reveal-flag">${race.flag}</div><h2>${race.name}</h2><p>The results are in…</p></div>`;
+  scores.forEach(({ s, pts }, si) => {
+    const base = 0.5 + si * 1.5;
+    const rows = s.preds.map((pred, i) => {
+      if (!pred) return '';
+      const key = ['p1','p2','p3'][i]; const r = s.rating[key];
+      const icon = r === true ? '✅' : r === false ? '❌' : '⬜';
+      return `<div class="reveal-pred" style="animation-delay:${(base + i * 0.35).toFixed(2)}s"><span>${icon}</span><span class="${r === false ? 'reveal-strike' : ''}">${pred}</span></div>`;
+    }).join('');
+    html += `<div class="reveal-row">
+      <div class="reveal-player"><span class="player-preds-avatar" style="background:${s.player.color}">${s.player.initials}</span><strong>${s.player.name}</strong>
+      <span class="reveal-score" style="animation-delay:${(base + 1.1).toFixed(2)}s">+${pts}${pts === maxPts && maxPts > 0 ? ' 🏆' : ''}</span></div>
+      ${rows}
+    </div>`;
+  });
+  html += `<div class="reveal-actions"><button class="btn btn-ghost" onclick="shareRaceCard(${race.id})">📤 Share</button><button class="btn btn-red" onclick="closeReveal()">Done</button></div>`;
+  document.getElementById('reveal-body').innerHTML = html;
+  document.getElementById('reveal-overlay').classList.add('open');
+  if (maxPts >= 2) setTimeout(confettiBurst, (0.5 + scores.length * 1.5) * 1000);
+}
+function closeReveal() { document.getElementById('reveal-overlay').classList.remove('open'); }
+
+// ── CONFETTI ──
+function confettiBurst() {
+  const c = document.getElementById('confetti-canvas');
+  c.style.display = 'block';
+  c.width = innerWidth; c.height = innerHeight;
+  const ctx = c.getContext('2d');
+  const colors = ['#e10600','#ff9f0a','#30d158','#0071e3','#bf5af2','#f5a623'];
+  const parts = Array.from({ length: 140 }, () => ({
+    x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.5,
+    vy: 2 + Math.random() * 3.5, vx: (Math.random() - .5) * 2,
+    sz: 5 + Math.random() * 6, cl: colors[Math.floor(Math.random() * colors.length)],
+    rot: Math.random() * Math.PI, vr: (Math.random() - .5) * .2,
+  }));
+  const t0 = Date.now();
+  (function frame() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    parts.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.cl; ctx.fillRect(-p.sz/2, -p.sz/2, p.sz, p.sz * 0.6); ctx.restore();
+    });
+    if (Date.now() - t0 < 3200) requestAnimationFrame(frame);
+    else { ctx.clearRect(0, 0, c.width, c.height); c.style.display = 'none'; }
+  })();
+}
+
+// ── SHARE CARD ──
+async function shareRaceCard(raceId, e) {
+  if (e) e.stopPropagation();
+  const race = RACES.find(r => r.id == raceId);
+  const summaries = playerPredSummary(raceId).filter(s => s.hasPreds);
+  if (!race || !summaries.length) return;
+  const scores = summaries.map(s => ({
+    name: s.player.name, color: s.player.color, initials: s.player.initials,
+    pts: ['p1','p2','p3'].filter(k => s.rating[k] === true).length,
+  })).sort((a, b) => b.pts - a.pts);
+  const standings = state.players.map(p => ({ name: p.name, total: calcPlayerPoints(p.id).total }))
+    .sort((a, b) => b.total - a.total);
+
+  const W = 1000, H = 1000, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = '#101014'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#e10600'; x.fillRect(0, 0, W, 14);
+  x.fillStyle = '#e10600'; x.font = '700 30px -apple-system, Helvetica, sans-serif'; x.fillText('F1 26 PREDICTIONS', 60, 95);
+  x.fillStyle = '#fff'; x.font = '800 62px -apple-system, Helvetica, sans-serif'; x.fillText(`${race.flag} ${race.name}`, 60, 180);
+  x.fillStyle = '#9a9aa2'; x.font = '500 30px -apple-system, Helvetica, sans-serif'; x.fillText(`${race.date} · ${race.round}`, 60, 228);
+  let y = 320;
+  x.fillStyle = '#9a9aa2'; x.font = '700 26px -apple-system, Helvetica, sans-serif'; x.fillText('RACE SCORES', 60, y);
+  scores.forEach((s, i) => {
+    y += 86;
+    x.fillStyle = s.color; x.beginPath(); x.arc(95, y - 12, 30, 0, 7); x.fill();
+    x.fillStyle = '#fff'; x.font = '700 24px -apple-system, Helvetica, sans-serif'; x.textAlign = 'center'; x.fillText(s.initials, 95, y - 3); x.textAlign = 'left';
+    x.font = '600 38px -apple-system, Helvetica, sans-serif'; x.fillText(s.name, 155, y);
+    x.font = '800 42px -apple-system, Helvetica, sans-serif'; x.textAlign = 'right';
+    x.fillText(`+${s.pts}${i === 0 && s.pts > 0 ? ' 🏆' : ''}`, W - 70, y); x.textAlign = 'left';
+  });
+  y += 120;
+  x.fillStyle = '#9a9aa2'; x.font = '700 26px -apple-system, Helvetica, sans-serif'; x.fillText('SEASON STANDINGS', 60, y);
+  standings.forEach((s, i) => {
+    y += 76;
+    x.fillStyle = '#6e6e76'; x.font = '800 32px -apple-system, Helvetica, sans-serif'; x.fillText(String(i + 1), 60, y);
+    x.fillStyle = '#fff'; x.font = '600 36px -apple-system, Helvetica, sans-serif'; x.fillText(s.name, 115, y);
+    x.font = '800 38px -apple-system, Helvetica, sans-serif'; x.textAlign = 'right'; x.fillText(`${s.total} pts`, W - 70, y); x.textAlign = 'left';
+  });
+  x.fillStyle = '#55555c'; x.font = '500 24px -apple-system, Helvetica, sans-serif'; x.fillText('🏁 made in our league', 60, H - 50);
+
+  const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+  const file = new File([blob], `${race.short}-results.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: `${race.name} results` }); return; } catch (err) { if (err.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `${race.short}-results.png`; a.click();
+  showToast('Results card downloaded 📤');
+}
+
+// ── PWA ──
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
 // ── TOAST ──
 function showToast(msg, isError=false) {

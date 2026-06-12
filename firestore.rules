@@ -7,10 +7,11 @@ service cloud.firestore {
     // Only the league/main document is accessible; all other paths are denied.
     match /league/main {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasOnly(['players', 'predictions', 'ratings'])
+      allow write: if request.resource.data.keys().hasOnly(['players', 'predictions', 'ratings', 'reactions'])
                    && request.resource.data.players is list
                    && request.resource.data.predictions is map
-                   && request.resource.data.ratings is map;
+                   && request.resource.data.ratings is map
+                   && (!('reactions' in request.resource.data) || request.resource.data.reactions is map);
     }
 
     // Deny everything else
